@@ -1,7 +1,7 @@
 
-#C++primer变量与基本类型&字符串、向量和数组<br>
+# C++primer变量与基本类型&字符串、向量和数组<br>
 其实C++这一门语言很好地阐释了计算机系统语言的一种，学了C++ 其他编程语言都会变得很简单，很容易上手，其实我也想在最近做一下C++ primer的总结，老生常谈，学语言最重要是要学会他的思想以及他赠送给你的思维，让你用新的思维去想一个问题。这段期间，每两个月做一次更新，主要就是摘录这本书的语句，咬文嚼字，并且实现里面的程序段代码，偶尔会夹杂一些算法的题目，基本上是刷leetcode的题目。<br>
-##一、变量与基本类型<br>
+## 一、变量与基本类型<br>
 这一章节很基础，也很重要。其实这一章节基本上是所有语言都该有的介绍，变量与基本类型，你必须知道基本内置类型的算术类型的尺寸，字节数，占位，才能计算出你设计的结构Struct是否满足你的使用而不溢出。其中更涉及到类型的转换，**类型转换**:对象的类型定义了对象能包含的数据与能参与的运算，其中一种运算被大多数类型支持，就是将对象从一种给定的类型转换为另一种相关类型。<br>
 **字面值常量**： 0开头 8进制  OX开头十六进制<br>
 在这里，着重讲一下变量，其实变量都会占用存储空间的，所以在声明一个变量要注意占用的空间。<br>
@@ -193,6 +193,7 @@ using namespace::name
 #include <string><br>
 using std::string<br>
 定义和初始化string对象<br>
+    
 string s1  //默认初始化，空串<br>
 string s2(s1) //s2是s1的一个副本<br>
 string s2=s1<br>
@@ -212,7 +213,6 @@ s1+s2<br>
 s1=s2<br>
 s1==s2<br>
 s1!=s2<br>
-```
 <,>=,<=,><br>
 读写string对象<br>
 string s1,s2;<br>
@@ -224,13 +224,17 @@ while(cin >> word)<br>
     cout<< word <<endl; //反复读取直至文件末尾<br>
 string::size_type类型<br>
 处理每个字符，使用基于范围的for语句<br>
-string s("hello world");<br>
-for(auto &c : s)<br>
-    c = toupper(c);<br>
-cout<< s << endl;<br>
+```
+string s("hello world");
+for(auto &c : s)
+    c = toupper(c);
+cout<< s << endl;
+```
 使用下标执行迭代<br>
+```
 for(decltype(s.size()) index = 0; index != s.size() && !isspace(s[index]); ++index)
       s[index] = toupper(s[index])
+```
 **标准库类型vector**<br>
 标准库类型vector 表示对象的集合，其中所有对象的类型都相同。 集合中的每个对象都有意个与之对应的索引，索引用于访问对象。<br>
 ```
@@ -241,25 +245,30 @@ C++语言既有类模板，也有函数模板，其实vector是一个类模板<b
 模板本身不是类或函数，相反可以将模板看作为编译器生成类或函数编写的一份说明。<br>
 编译器根据模板创建类或函数的过程称为实例化，当使用模板时，需要指出编译器应把类或函数实例化成何种类型。<br>
 例如<br>
-vector<int> ivec;<br>
-vector<Sales_item> Sales_vec;<br>
-vector<vector<string>> file;  //该向量的元素是vector对象<br>
+```
+vector<int> ivec;
+vector<Sales_item> Sales_vec;
+vector<vector<string>> file;  //该向量的元素是vector对象
+```
 vector能容纳绝大多数类型的对象作为其元素，但是因为引用不是对象，所以不存在包含引用的vector。<br>
 定义与初始化vector对象<br>
-
-vector<T> v1;<br>
-vector<T> v2(v1)<br>
-vector<T> v3(n,val)<br>
-vector<T> v4(n)<br>
-vector<T> v5 {a,b,c,d...}<br>
-vector<T> v5 = {a,b,c,d,e,f...}<br>
+```
+vector<T> v1;
+vector<T> v2(v1)
+vector<T> v3(n,val)
+vector<T> v4(n)
+vector<T> v5 {a,b,c,d...}
+vector<T> v5 = {a,b,c,d,e,f...}
+```
 向vector对象中添加元素<br>
 <br>
+```
 vector <int> v2;
 for(int i = 0;i!=100;++i)
     v2.push_back(i);
-    <br>
+```
 vector操作
+```
 v.empty()
 v.size()
 v.push_back(t)
@@ -268,6 +277,7 @@ v1 = v2
 v1 = {a,b,c,...}
 v1 == v2
 v1 != v2
+```
 **使用迭代器(iterator)**<br>
 *迭代器分为有效和无效，这一点和指针差不多。有效的迭代器或者指向某个元素，或者指向容器中尾元素的下一位置，其他情况都属于无效。*<br>
 *使用迭代器 5.22*<br>
@@ -378,3 +388,4 @@ strcpy(p1,p2) 将p2拷贝给p1，返回p1<br>
 int ia[3][4]; //大小为3的数组，每个元素是含有4个整数的数组
 int (*p)[4] = ia; //p指向含有4个整数的数组
 p = &ia[2]; //
+```
