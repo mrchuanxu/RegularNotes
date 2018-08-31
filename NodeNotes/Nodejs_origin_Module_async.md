@@ -445,6 +445,62 @@ fs.readFile('template.tpl','utf-8',ep.done('tpl'));
 db.get('some sql',ep.done('data'));
 };
 ```
-Promise/Deferred模式
+### Promise/Deferred模式
+使用事件的方式时，执行流程需要被预先设定。即便时分之，也需要预先设定，这就是发布/订阅模式的运行机制所决定的。
+**普通的Ajax调用**
+```
+$.get('/api',{
+    success:onSuccess,
+    error:onError,
+    complete
+});
+```
+在上面的异步调用中，必须严谨地设置目标。那么是否有一种先执行异步调用，延迟传递处理的方式呢？
+**Promise/Deferred模式
+```
+$.get('api').success(onSuccess).error(onError).complete(onComplete);
+```
+这使得即使不调用success()、error()等方法，Ajax也会执行，这样的调用方式比预先传入回调让人觉得舒适一些。<br>
+在原始的API中，一个事件只能处理一个回调，而通过Deferred对象，可以对事件加入任意的业务处理逻辑。<br>
+```
+$.get('/api').success(onSuccess).success(onSuccess1);
+```
+异步的广度使用使得回调、嵌套出现，但是一旦出现深度的嵌套，就会让编程的体验变得不愉快，而Promise/Deferred模式在一定程度上缓解了这个问题。<br>
+Promises/A\B\C\D相继出现
+### 1.Promises/A
+Promise/Deferred模式其实包含两部分，即Promise和Deferred。
+Promises/A的行为
+**Promise操作对单个异步操作做出了这样的抽象定义**
+@Promise操作只会处在3中状态的一种：未完成态、完成态和失败态<br>
+@Promise的状态只会出现从未完成态或失败态转化，不能逆反。完成态和失败态不能相互转化<br>
+@Promise的状态一旦转化，就不能被更改
+![Promise的状态转化示意图](http://www.ous.im/img/Deferred.png)
+在API的定义上。Promise/A提议是比较简单的。一个Promise对象只要具备then()方法即可。但是对于then方法，要求如下：<br>
+@接受完成态、错误态的回调方法。在操作完成或出现错误时，将会调用对应方法<br>
+@可选地支持progress事件回调作为第三个方法<br>
+@then() 方法只接受function对象，其余对象将被忽略<br>
+@then() 方法继续返回Promise对象，以实现链式调用<br>
+then方法定义如下：
+```
+then(fulfilledHandler,errorHandler,progressHandler)
+```
+为了演示Promises/A提议，这里我们尝试通过继承Node的events模块来完成一个简单的实现
+```
+var Promise = function(){
+    EventEmitter.call(this);
+};
 
-
+util.inherits(Promise,EventEmitter);
+Promise.prototype.then = function(fulfillHandler,errorHandler,progressHandler){
+    if(typeof fulfillHandler === 'function'){
+        this.once('success',fulfillHandler);
+    }
+        if(typeof errorHandler === 'function'){
+        this.once('success',errorHandler);
+    }
+        if(typeof progressHandler === 'function'){
+        this.once('success',progressHandler);
+    }
+    return this;
+};
+```
