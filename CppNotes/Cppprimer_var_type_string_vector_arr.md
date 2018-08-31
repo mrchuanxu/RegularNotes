@@ -8,7 +8,7 @@
 **变量**：  提供一个具名的、可供程序操作的存储空间。阐述一下：（C++中每个变量都有其数据类型，数据类型决定着变量所占空间的大小和布局方式、该空间能存储的值的范围，以及变量能参与的运算。）<br>
 **变量的定义**：基本形式 类型说明符 随后紧跟着由一个或多个变量名组成的列表，用逗号隔开这列表，最后分号结束。<br>
 *举个栗子*：
-    ```     
+    ```cpp 
            int sum,value=0; 
            Sales_item item;//Sales_item 是一种自定义类型，在后面的第七章会讲到这个如何定义！
            ```
@@ -29,7 +29,7 @@ int j;//声明并定义j<br>
 
 **复合类型**：基于其他类型定义的类型<br>
 引用：为对象起的另外一个名字，引用类型引用另外一种类型，通过将声明符写成&d的形式来定义引用类型，其中d是声明的变量名：<br>
-```
+```cpp
 int ival = 1024
 
 int &refVal = ival;//refVal 指向ival（是ival的另外一个名字）
@@ -66,7 +66,7 @@ int i = refVal;<br>
 2. 指针无须在定义时赋予初值。和其他内置类型一样，在块作用域内定义的指针如果没有被初始化，也将拥有一个不确定的值。<br>
 
 获取对象的地址<br>
-```
+```cpp
 int ival = 42;
 
 int *p = &ival;
@@ -83,7 +83,7 @@ int *p = &ival;
 **利用指针访问对象**<br>
 如果指针指向了一个对象，则允许使用解引用符（*）<br>
 其实这里已经充分体现（*）是一复合类型<br>
-```
+```cpp
 int ival = 42;
 int *p = &ival;
 cout<< *p;
@@ -128,7 +128,7 @@ const int ci = 1024;<br>
 const int &r1 = ci; // 引用及其对应的对象都是常量（这里说明一下，类型必须是匹配的，常量对常量，非常量对非常量<br>
 **初始化和对const的引用**
 引用的类型必须与其所引用对象的类型一致，但是两个例外：1. 在初始化常量引用时允许用任意表达式作为初始值，只要表达式的结果能转换成引用的类型即可。例如：<br>
-```
+```cpp
 int i = 42;
 const int &r1 = i;
 const int &r2 = 42;
@@ -152,7 +152,7 @@ const double *const piptr = &pi;//piptr是一个指向常量对象的常量指�
 这里有两个相互独立的问题需要看看  指针本身是不是常量以及    指针所指的是不是一个常量<br>
 顶层const：指针本身是个常量<br>
 底层const：指针所指的对象是一个常量<br>
-```
+```cpp
 int i = 0;
 int *const pi = &i; //顶层
 const int ci = 42;//顶层
@@ -162,7 +162,7 @@ const int *p2 = &ci //底层
 常量表达式是指值不会改变并且再编译过程就能得到计算结果的表达式。<br>
 处理类型<br>
 类型别名：
-```
+```cpp
 typedef double wages;
 typedef wages base,*p;
 using SI = Sales_item;
@@ -173,7 +173,7 @@ auto item =val1+val2;<br>
 decltype类型指示符（选择并返回操作数的数据类型）int i = 1 ;decltype (i) x = 0;<br>
 自定义数据结构（这项技能是一定必须要用到的）<br>
 栗子：<br>
-```
+```cpp
 struct Sales_data{
     std::string bookNo;
     unsigned units_sold = 0;
@@ -184,13 +184,13 @@ struct Sales_data{
 **字符串、向量和数组**<br>
 string表示可变长的字符序列，vector存放的是某种给定类型对象的可变长序列<br>
 命名空间的using声明<br>
-```
+```cpp
 using namespace::name
 ```
 一般来说，头文件不应包含using声明<br>
 **标准库类型string**<br>
 使用string类型必须首先包含string头文件<br>
-```
+```cpp
 #include <string>
 using std::string
 定义和初始化string对象
@@ -226,12 +226,12 @@ while(cin >> word)<br>
     cout<< word <<endl; //反复读取直至文件末尾<br>
 string::size_type类型<br>
 处理每个字符，使用基于范围的for语句<br>
-```
+```cpp
 string s("hello world");
 for(auto &c : s)
     c = toupper(c);
 cout<< s << endl;
-```
+```cpp
 使用下标执行迭代<br>
 ```
 for(decltype(s.size()) index = 0; index != s.size() && !isspace(s[index]); ++index)
@@ -239,7 +239,7 @@ for(decltype(s.size()) index = 0; index != s.size() && !isspace(s[index]); ++ind
 ```
 **标准库类型vector**<br>
 标准库类型vector 表示对象的集合，其中所有对象的类型都相同。 集合中的每个对象都有意个与之对应的索引，索引用于访问对象。<br>
-```
+```cpp
 #include <vector>
 using std::vector;
 ```
@@ -247,14 +247,14 @@ C++语言既有类模板，也有函数模板，其实vector是一个类模板<b
 模板本身不是类或函数，相反可以将模板看作为编译器生成类或函数编写的一份说明。<br>
 编译器根据模板创建类或函数的过程称为实例化，当使用模板时，需要指出编译器应把类或函数实例化成何种类型。<br>
 例如<br>
-```
+```cpp
 vector<int> ivec;
 vector<Sales_item> Sales_vec;
 vector<vector<string>> file;  //该向量的元素是vector对象
 ```
 vector能容纳绝大多数类型的对象作为其元素，但是因为引用不是对象，所以不存在包含引用的vector。<br>
 定义与初始化vector对象<br>
-```
+```cpp
 vector<T> v1;
 vector<T> v2(v1)
 vector<T> v3(n,val)
@@ -264,13 +264,13 @@ vector<T> v5 = {a,b,c,d,e,f...}
 ```
 向vector对象中添加元素<br>
 <br>
-```
+```cpp
 vector <int> v2;
 for(int i = 0;i!=100;++i)
     v2.push_back(i);
 ```
 vector操作
-```
+```cpp
 v.empty()
 v.size()
 v.push_back(t)
@@ -292,7 +292,7 @@ iter->mem //解引用iter并获取该元素的名为mem的成员，等价 （*it
 ++iter
 --iter
 举个例子使用迭代器<br>
-```
+```cpp
 string s("something");
 if(s.begin() != s.end()){
     auto it = s.begin();
@@ -301,7 +301,7 @@ if(s.begin() != s.end()){
 ```
 将迭代器从一个元素移动到另外一个元素 523<br><br>
 迭代器使用递增运算符来从一个元素移动到下一个元素<br>
-```
+```cpp
 for(auto it = s.begin(); it != s.end()&&!isspace(*it);++it)
       *it = toupper(*it);//将当前字符改成大写形式
 ```
@@ -310,7 +310,7 @@ for(auto it = s.begin(); it != s.end()&&!isspace(*it);++it)
 迭代器类型<br>
 **begin和end运算符**<br>
 begin和end返回的具体类型由对象是否是常量决定，如果对象是常量，begin 和 end返回const_iterator; 如果对象不是常量，返回iterator<br>
-```
+```cpp
 vector<int> v;
 const vector<int> cv;
 auto it1 = v.begin();
@@ -329,14 +329,14 @@ iter1 -= n
 iter1-iter2
 <,>,>=,<=
 举个关于使用迭代器运算的的一个经典算法，二分法搜索<br>
-```
+```cpp
 auto beg = text.begin(),end = text.end();
 auto mid = text.begin() +（end-beg)/2;
 while(mid != end && *mid != soughor)
 ```
 的数据结构，但是在性能和灵活性的权衡上又与vector有所不同。与vector相似的地方是，数组也是存放类型相同的对象的容器。与vector不同的地方在于，数组的大小确定不变，不能随意向数组中增加元素。
 **定义和初始化内置数组**<br>
-```
+```cpp
 unsigned cnt = 42; //非常量表达式
 constexpr unsigned sz = 42; //常量表达式
 int arr[10]; //含有10个整数的数组
@@ -358,7 +358,7 @@ a2 = a; //不能把一个数组直接赋值给另一个数组
 *warning: 一些编译器支持数组的赋值，这就是所谓编译器扩展，但一般来说，最好避免使用非标准特性，因为含有非标准特性的程序很可能在其他编译器上无法正常工作*<br>
 **理解复杂的数组声明**<br>
 和vector一样，数组能存放大多数类型的对象。<br>
-```
+```cpp
 int *ptrs[10]; //ptrs是含有10个整型指针的数组；<br>
 int (*Parray)[10] = &arr; //Parray指向一个含有10个整数的数组<br>
 int (&arrRef)[10] = arr ;//arrRef引用一个含有10个整数的数组<br>
@@ -370,7 +370,7 @@ int *(&array)[10] = ptrs; //array是数组的引用，该数组含有10个指针
 *使用数组下标的时候，通常定义为size_t类型。size_t是一种机器相关的无符号类型，他被设计得足够大以便能表示内存中任意对象的大小。*<br>
 **指针和数组**
 *通常情况下，使用取地址符来获取指向某个对象的指针，取地址符可以用于任何对象。*<br>
-```
+```cpp
 string nums[] = {"one","two","three"};
 string *p = &nums[0]; <=> string *p = nums;
 ```
@@ -388,7 +388,7 @@ strcat(p1,p2) 将p2附加到p1之后，返回p1<br>
 strcpy(p1,p2) 将p2拷贝给p1，返回p1<br>
 **指针和多维数组**
 当程序使用多维数组的名字时，也会自动将其转换成指向数组首元素的指针<br>
-```
+```cpp
 int ia[3][4]; //大小为3的数组，每个元素是含有4个整数的数组
 int (*p)[4] = ia; //p指向含有4个整数的数组
 p = &ia[2]; //

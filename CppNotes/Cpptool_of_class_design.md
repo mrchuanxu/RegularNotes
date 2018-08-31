@@ -5,7 +5,7 @@
 @定义一个析构函数来释放string
 @定义一个拷贝赋值运算符来释放对象当前的string。并从右侧运算对象拷贝string
 **类值版本**
-```
+```cpp
 class HasPtr{
     public:
         HasPtr(const string &s = string()):ps(new string(s)),i(0){} //对ps指向的string，每个HasPtr对象都有自己的拷贝
@@ -26,7 +26,7 @@ class HasPtr{
 这些操作是以正确的顺序执行的，即使将一个对象赋予它自身，也保证正确。而且，如果可能，我们编写的赋值运算符还应该是异常安全的---当异常发生时，能将左侧运算对象置于一个有意义的状态<br>
 举个🌰
 通过先拷贝右侧运算对象，我们可以处理自赋值情况，并能保证在异常发生时代码也是安全的。在完成拷贝后，我们释放左侧运算对象的资源，并更新指针指向新分配的string<br>
-```
+```cpp
 HasPtr& HasPtr::operator=(const HasPtr &rhs){
     auto newp = new string(*rhs.ps); //拷贝底层string
     delete ps; //释放旧内存
@@ -45,7 +45,7 @@ HasPtr& HasPtr::operator=(const HasPtr &rhs){
 *未定义析构函数，将会发生内存泄漏。 若未定义拷贝构造函数，将会拷贝指针的值，指向同一个地址*
 ❓假定希望定义 StrBlob 的类值版本，而且希望继续使用 shared_ptr，这样我们的 StrBlobPtr 类就仍能使用指向vector的 weak_ptr 了。你修改后的类将需要一个拷贝的构造函数和一个拷贝赋值运算符，但不需要析构函数。解释拷贝构造函数和拷贝赋值运算符必须要做什么。解释为什么不需要析构函数<br>
 *拷贝构造函数和拷贝赋值运算符要重新动态分配内存。因为 StrBlob 使用的是智能指针，当引用计数为0时会自动释放对象，因此不需要析构函数。*
-```
+```cpp
 #ifndef ex13_26_h
 #define ex13_26_h
 
