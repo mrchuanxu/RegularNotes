@@ -5,7 +5,7 @@
 
 ## Node特点
 **异步 I/O**
-```
+```js
 $.post('url',{title:'nodejs is the best'},function (data){
     console.log('got this');
 });
@@ -13,7 +13,7 @@ console.log('end post');
 ```
 在这里，其实熟悉异步的用户会知道，got this是在end post之后输出的。在调用$.post()后，后续代码是被立即执行的，而got this的执行时间是不被预期的。我们只知道它将在这个异步请求结束后执行，但并不知道具体的时间点。其实在异步调用中，对于结果值的捕获始终遵循一个原则就是"Don't call me, I will call you"。<br>
 那么在node中，异步IO也很常见。例如读取文件<br>
-```
+```js
 var fs = require('fs');
 fs.readFile('/path',function(err,file){
      console.log('read finish');
@@ -24,7 +24,7 @@ console.log('go read');
 其实在node中，绝大多数的操作都以异步的方式进行调用。在Node中，我们可以语言层面很自然地进行并行I/O操作。
 事件与回调函数<br>
 通过一个例子来解释一下事件<br>
-```
+```js
 var http = require('http');
 var querystring = require('querystring');
 
@@ -50,12 +50,12 @@ Node保持了Javascript在浏览器中单线程的特点。 而且在Node中，j
 js经历了 工具->组件->框架->应用 <br>
 CommonJS模块规范<br>
 1. 模块引用<br>
-```
+```js
 var math = require('math');
 ```
 2.模块定义<br>
 //math.js
-```
+```js
 exports.add = function(){
 var sum = 0,i=0,args = arguments, l=args.length;
 while(i<1){
@@ -110,7 +110,7 @@ require()方法对相同模块的二次加载都一律采用缓存优先的方�
 1.javascript模块的编译<br>
 事实上，在编译的过程中，Node对获取的JavaScript文件内容进行了头尾包装。在头部添加了（function(exports,require,module,__filename,__dirname){\n, 在尾部添加了\n});<br>
 一个正常的Javascript文件会被包装成如下的样子：<br>
-```
+```js
       (function(exports,require,module,__filename,__dirname){
                 var math = require('math');
                 exports.area = function(radius){
@@ -126,7 +126,7 @@ require()方法对相同模块的二次加载都一律采用缓存优先的方�
 *javascipt核心模块的编译过程*
 **1.转存为C/C++ 代码**<br>
 Node采用了V8附带的js2c.py工具，将所有内置的JavaScript代码（src/node.js和lib/*.js) 转换成C++里的数组，生成node_natives.h头文件
-```
+```js
 namespace node{
     const char node_native[] = {47,47,..};
     ..
@@ -158,13 +158,13 @@ libuv库： Node能够实现跨平台的一个诀窍就是它的libuv库。这�
 其他库<br>
 编写<br>
 普通的扩展模块与内建模块的区别在于无须将源代码编译进Node，而是通过dlopen()方法动态加载。所以在编写普通的扩展模块时，无须将源代码写进node命名空间，也不需要头文件。<br>
-```
+```js
 exports.sayHello = function(){
     return 'hello world';
 };
 ```
 新建hello目录作为自己的项目位置，编写hello.cc并将其存储到src目录下。
-```
+```js
 #include <node.h>
 #include <v8.h>
 using namespace v8;
@@ -229,14 +229,14 @@ Node的异步I/O<br>
 ## 异步编程
 有异步IO，必有异步编程<br>
 高阶函数
-```
+```js
 points.sort(function(a,b){
 return b-a;
 });
 ```
 通过改动sort()方法的参数，可以决定不同的排序方式，从这里可以看出高阶函数的灵活性<br>
 结合node提供的最基本的事件模块可以看到，事件的处理方式正是基于高阶函数的特性来完成的。<br>
-```
+```js
 var emitter = new events.EventEmitter();
 emitter.on('event_foo',function(){
 alert("hahah");
@@ -246,7 +246,7 @@ alert("hahah");
 ### 偏函数用法
 偏函数用法是指创建一个调用另外一部分--参数或变量已经预置的函数--的函数的用法。<br>
 为了解决重复定义的问题，我们引入一个新函数，这个函数可以如工厂一样批量创建一些类似的函数。<br>
-```
+```js
 var isType = function(type){
 return function(obj){
 return toString.call(obj) == '[object'+type+']';
@@ -268,13 +268,13 @@ Node是为了解决编程模型中阻塞I/O的性能问题的，采用了单线�
 **1.难点一：异常处理**<br>
 try...catch(e) 异步编程并不适用。异步I/O的实现主要包含两个阶段：提交请求和处理结果。这两个阶段中间有事件循环的调度，两者彼此不关联。异步方法则通常在第一个阶段提交请求后立即返回，因为异常并不一定发生在这个阶段，try/catch的功效在此处不会出现任何作用<br>
 Node在处理异常上形成了一种约定，将异常作为回调函数的第一个实参传回，如果为空值，则表明异步调用没有异常抛出。<br>
-```
+```js
 async(function(err,result){});
 ```
 **遵循一些原则**<br>
 1. 必须执行调用者传入的回调函数<br>
 2.正确传递回异常供调用者判断<br>
-```
+```js
 var async = function(callback){
 process.nextTick(function(){
 var results = dosomething;
@@ -284,7 +284,7 @@ return callback(errors);
 ```
 
 在异步方法的编写中，另一个容易犯的错误是对用户传递的回调函数进行异常捕获。
-```
+```js
 try{
 req.body = JSON.parse(buf,options,reviver);
 callback();
@@ -300,7 +300,7 @@ callback(err);
 **难点五.异步转同步**<br>
 解决方案
 @事件发布/订阅模式 事件监听器模式是一种广泛用于异步编程的模式，是回调函数的事件化。
-```
+```js
 emitter.on("event1",function(message){
 console.log(message);
 });//订阅 订阅事件就是一个高阶函数的应用。事件发布/订阅模式可以实现一个事件与多个回调函数的关联，这些回调函数又称为事件侦听器
@@ -310,7 +310,7 @@ emitter.emit("event1","I am message");
 @Promise/Deferred模式
 @流程控制库
 继承events模块
-```
+```js
 > var events = require('events');
 undefined
 > function Stream(){
@@ -325,7 +325,7 @@ Node在util模块中封装了继承的方法，所以此处可以很便利地调
 利用事件队列解决雪崩问题
 在时间订阅/发布模式中，通常也有一个once方法，通过它添加的侦听器只能执行一次，在执行后就会将它与事件的关联移除。这个特性常常可以帮助我们过滤一些重复性的事件相应。
 雪崩问题：高访问量、大并发量的情况下缓存失效的情景，此时大量的请求同时涌入数据库中，数据库无法同时承受如此大的查询请求，进而往前影响到网站整体的响应速度。
-```
+```js
 var proxy = new events.EventEmitter();
 var status = "ready" //引入状态锁
 var select = function(callback){
@@ -342,7 +342,7 @@ var select = function(callback){
 多异步之间的协作方案
 事件发布/订阅模式有着它的优点。利用高阶函数的优势，侦听器作为回调函数可以随意添加和删除，它帮助开发者轻松处理随时可能添加的业务逻辑。
 @可以隔离业务逻辑，保持业务逻辑单元的职责单一。
-```
+```js
 var count = 0;
 var results = {};
 var done = function(key,value){
@@ -363,7 +363,7 @@ done("resources",resources);
 });
 ```
 由于多个异步场景中回调函数的执行并不能保证顺序，且回调函数之间互相没有任何交集，所以需要借助一个第三方函数和第三方变量来处理异步协作的结果。@通常，我们把这个用于检测次数的变量叫做哨兵变量。
-```
+```js
 var after = function(times,callback){
     var count = 0,results = {};
 return function(key,value){
@@ -377,7 +377,7 @@ return function(key,value){
 var done = after(times.render);
 ```
 利用发布订阅方式来完成多对多的方案
-```
+```js
 var emitter = new events.Emitter();
 var done = after(times.render);
 emitter.on("done",done);
@@ -394,7 +394,7 @@ l1on.get(function(err,resources){
 });
 ```
 另一个方案则是来自笔者自己写的EventProxy模块，它是对事件订阅/发布模式的扩充，可以自由订阅组合事件。由于依旧采用的是事件订阅/发布模式，与Node非常契合
-```
+```js
 var proxy = new EventProxy();
 proxy.all("template","data","resources",function(template,data,resources){
 //TODO
@@ -413,12 +413,12 @@ EventProxy 提供了一个al()方法来订阅多个事件，当每个事件被�
 tail()方法： 侦听器在满足条件时执行一次后，如果组合事件中的某个事件被再次触发，侦听器会用最新的数据继续执行<br>
 all()方法： 侦听器在满足条件之后只会执行一次<br>
 EventProxy提供了after() 方法来实现事件在执行多少次后执行侦听器的单一事件组合订阅方式<br>
-```
+```js
 proxy.after("data",10,function(datas){}); //执行10次data事件后，执行侦听器。
 ```
 ### EventProxy原理
 EventProxy来自于Backbone的事件模块，Backbone的事件模块是Model、View模块的基础功能，在前端有广泛的使用。它在每个非all事件触发时都会触发一次all事件
-```
+```js
 trigger : function(eventName){
     var list,calls,ev,callback,args;
     var both = 2;
@@ -431,7 +431,7 @@ EventProxy则是将all当做一个事件流的拦截层，在其中注入一些�
 EventProxy的异常处理<br>
 EventProxy在事件发布/订阅模式的基础上还完善了异常处理<br>
 EventProxy实践过程<br>
-```
+```js
 exports.getContent = function(callback){
 var ep = new EventProxy();
 ep.all('tpl','data',function(tpl,data){
@@ -448,7 +448,7 @@ db.get('some sql',ep.done('data'));
 ### Promise/Deferred模式
 使用事件的方式时，执行流程需要被预先设定。即便时分之，也需要预先设定，这就是发布/订阅模式的运行机制所决定的。
 **普通的Ajax调用**
-```
+```js
 $.get('/api',{
     success:onSuccess,
     error:onError,
@@ -457,12 +457,12 @@ $.get('/api',{
 ```
 在上面的异步调用中，必须严谨地设置目标。那么是否有一种先执行异步调用，延迟传递处理的方式呢？
 **Promise/Deferred模式
-```
+```js
 $.get('api').success(onSuccess).error(onError).complete(onComplete);
 ```
 这使得即使不调用success()、error()等方法，Ajax也会执行，这样的调用方式比预先传入回调让人觉得舒适一些。<br>
 在原始的API中，一个事件只能处理一个回调，而通过Deferred对象，可以对事件加入任意的业务处理逻辑。<br>
-```
+```js
 $.get('/api').success(onSuccess).success(onSuccess1);
 ```
 异步的广度使用使得回调、嵌套出现，但是一旦出现深度的嵌套，就会让编程的体验变得不愉快，而Promise/Deferred模式在一定程度上缓解了这个问题。<br>
@@ -481,11 +481,11 @@ Promises/A的行为<br>
 @then() 方法只接受function对象，其余对象将被忽略<br>
 @then() 方法继续返回Promise对象，以实现链式调用<br>
 then方法定义如下：
-```
+```js
 then(fulfilledHandler,errorHandler,progressHandler)
 ```
 为了演示Promises/A提议，这里我们尝试通过继承Node的events模块来完成一个简单的实现
-```
+```js
 var Promise = function(){
     EventEmitter.call(this);
 };
