@@ -466,15 +466,15 @@ $.get('api').success(onSuccess).error(onError).complete(onComplete);
 $.get('/api').success(onSuccess).success(onSuccess1);
 ```
 异步的广度使用使得回调、嵌套出现，但是一旦出现深度的嵌套，就会让编程的体验变得不愉快，而Promise/Deferred模式在一定程度上缓解了这个问题。<br>
-Promises/A\B\C\D相继出现
-### 1.Promises/A
-Promise/Deferred模式其实包含两部分，即Promise和Deferred。
-Promises/A的行为
-**Promise操作对单个异步操作做出了这样的抽象定义**
+Promises/A\B\C\D相继出现<br>
+### 1.Promises/A<br>
+Promise/Deferred模式其实包含两部分，即Promise和Deferred。<br>
+Promises/A的行为<br>
+**Promise操作对单个异步操作做出了这样的抽象定义**<br>
 @Promise操作只会处在3中状态的一种：未完成态、完成态和失败态<br>
 @Promise的状态只会出现从未完成态或失败态转化，不能逆反。完成态和失败态不能相互转化<br>
 @Promise的状态一旦转化，就不能被更改
-![Promise的状态转化示意图](http://www.ous.im/img/Deferred.png)
+![Promise的状态转化示意图](http://www.ous.im/img/Deferred.png)<br>
 在API的定义上。Promise/A提议是比较简单的。一个Promise对象只要具备then()方法即可。但是对于then方法，要求如下：<br>
 @接受完成态、错误态的回调方法。在操作完成或出现错误时，将会调用对应方法<br>
 @可选地支持progress事件回调作为第三个方法<br>
