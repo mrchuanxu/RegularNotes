@@ -504,3 +504,75 @@ Promise.prototype.then = function(fulfillHandler,errorHandler,progressHandler){
     return this;
 };
 ```
+这里看到then()方法所做的事情是将回调函数存放起来。为了完成整个流程，还需要触发执行这下回调函数的地方，实现这些功能的对象通常被称为Deferred,即延迟对象<br>
+```js
+var Deferred = function(){
+    this.state = 'unfulfilled';
+    this.promise = new Promise();
+};
+
+Deferred.prototype.resolve = function(obj){
+    this.state = 'fulfilled';
+    this.promise.emit('success',obj);
+};
+
+Deferred.prototype.reject = function(err){
+    this.state = 'failed';
+    this.promise.emit('error',err);
+};
+
+Deferred.prototype.progress = function(data){
+    this.promise.emit('progress',data);
+};
+```
+这里的方法之间的对应关系如图
+![状态与方法之间的对应关系](https://timgsa.baidu.com/timg?image&quality=80&size=b9999_10000&sec=1536032270806&di=13f812890fe28251645d009af8b7825a&imgtype=0&src=http%3A%2F%2Fpic4.zhimg.com%2Fv2-a90a6c703c051370aee8311ec00ef4a5_b.jpg)<br>
+其中完成态为resolve，失败态为reject<br>
+利用Promise/A提议的模式，我们可以对一个典型的相应对象进行封装
+```js
+res.setEncoding('utf-8');
+res.on('data',function(chunk){
+    console.log('BODY:'+chunk);
+});
+
+res.on('end',function(){
+    //Done
+});
+res.on('error',function(err){
+    //Error
+});
+```
+上述代码可转化为：
+```js
+res.then(function(){},function(err){},function(chunk){});
+``` 
+要实现上述褥子简单的API，只需要简单地改造一下即可
+```js
+var promisify = function(res){
+    var deferred = new Deferred();
+    var result = '';
+    res.on('data',function(chunk){
+        console.log('BODY:'+chunk);
+        deferred.progress(chunk);
+    });
+
+    res.on('end',function(){
+        deferred.resolve(result);
+        //Done
+    });
+    res.on('error',function(err){
+        deferred.reject(err)
+        //Error
+    });
+    return deferred.promise;
+}
+```
+这里返回deferred.promise的目的是为了不让外部程序调用resolve()和reject()方法，更改内部状态的行为交由定义者处理。
+```js
+promisify(res).then(function(){},...)
+```
+![Promise/Deferred整体关系示意图]()
+
+**Promise参考文档**<br>
+https://juejin.im/post/5a31d21e5188257dd239a7cc
+
