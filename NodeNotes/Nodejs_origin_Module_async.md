@@ -571,7 +571,7 @@ var promisify = function(res){
 ```js
 promisify(res).then(function(){},...)
 ```
-![Promise/Deferred整体关系示意图](./img/deferred_promise.png,"promise/deferred")
+![Promise/Deferred整体关系示意图](./img/deferred_promise.png)
 
 **Promise参考文档**<br>
 https://juejin.im/post/5a31d21e5188257dd239a7cc
