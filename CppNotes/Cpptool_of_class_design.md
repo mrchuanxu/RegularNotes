@@ -482,8 +482,169 @@ StrBlob& StrBlob::operator=(const StrBlob& sb)
 #endif // !ex13_26_h
 ```
 ## 定义行为像指针的类
-对于行为类似指针的类，我们需要为其定义拷贝构造函数和拷贝赋值运算符，来拷贝指针成员而不是它所指向的string。<bt>
+对于行为类似指针的类，**我们需要为其定义拷贝构造函数和拷贝赋值运算符，来拷贝指针成员而不是它所指向的string。<br>**
 我们的类仍然需要自己的*析构函数*来释放接受string参数的构造函数分配的内存。但是在本例中，析构函数不能单方面地释放关联的string。只有当最后一个指向string的HasPtr销毁时，它才可以释放string。<br>
-令一个类展现类似指针的行为的最好的方法是使用shared_ptr来管理类中的资源。拷贝（或赋值）一个shared_ptr会拷贝（赋值）shared_ptr所指向的指针。<br>
+**令一个类展现类似指针的行为的最好的方法是使用shared_ptr来管理类中的资源**。拷贝（或赋值）一个shared_ptr会拷贝（赋值）shared_ptr所指向的指针。<br>
 shared_ptr类自己记录有多少用户共享它所指向的对象。当没有用户使用对象时，shared_ptr类负责释放资源<br>
 但是有时，我们希望直接管理资源。在这种情况下，使用引用计数就很有用了。（*为了说明引用计数如何工作，我们将重新定义HasPtr，令其行为像指针一样，但我们不使用shared_ptr，而是设计自己的引用计数。*）
+
+### 引用计数
+@引用计数的工作方式
+除了初始化对象外，每个构造函数（拷贝构造函数除外）还要创建一个引用计数，用来记录有多少对象与正在创建的对象共享状态。当我们创建一个对象时，只有一个对象共享状态，因此将次计数器初始化为1.<br>
+**拷贝构造函数不分配新的计数器，而是拷贝给定对象的数据成员，包括计数器。**拷贝构造函数*递增*共享的计数器，指出给定对象的状态又被一个新用户所共享。<br>
+**析构函数递减计数器，指出共享状态的用户少了一个。如果计数器变为0，则析构函数释放状态。<br>**
+拷贝赋值运算符递增右侧运算对象的计数器，递减左侧运算对象的计数器。如果左侧运算对象的计数器变为0，意味着它的共享状态没有用户了，**拷贝赋值运算符就必须销毁状态。<br>**
+#### 唯一的难题
+确定在哪里存放引用计数。计数器不能直接作为HasPtr 对象的成员：
+```cpp
+HasPtr p1("haha");
+HasPtr p2(p1); //p1和p2指向相同的string
+HasPtr p3(p1); // p1、p2和p3都指向相同的string
+```
+❓如果引用计数保存在每个对象中，当创建p3时我们应该如何正确更新它呢？可以递增p1中的计数器并将其拷贝到p3中，但如何更新p2中的计数器？<br>
+如何解决这个问题呢？💡将计数器保存在动态内存中。当创建一个对象时，我们也分配一个新的计数器。当拷贝或赋值对象时，我们拷贝指向计数器的指针。使用这种方法，副本和原对象都会指向相同的计数器。<br>
+### 定义一个使用引用计数的类
+尝试编写HasPtr版本:
+```cpp
+class HasPtr{
+	public:
+	// 构造函数分配新的string和新的计数器，将计数器置为1.
+	HasPtr(const string &s = string()):ps(new string(s)),i(0),use(new size_t(1));
+	// 拷贝构造函数拷贝所有三个数据成员，并递增计数器
+	HasPtr(const HasPtr &p):ps(p.ps),i(p.i),use(p.use){++*use;}
+	HasPtr& operator=(const HasPtr&);
+	~HasPtr();
+	private:
+	string *ps;
+	int i;
+	size_t *use; //用来记录有多少个对象共享*ps的成员
+}
+```
+### 类指针的拷贝成员“篡改”引用计数
+当拷贝一个HasPtr时，我们将拷贝ps本身，而不是ps指向的string。当我们进行拷贝时，还会递增该string关联的计数器。<br>
+析构函数不能无条件地delete ps---可能还有其他对象指向这块内存。析构函数应该递减引用计数，指出共享string的对象少了一个。如果计数器变为0，则析构函数释放ps和use指向的内存：🌰
+```cpp
+HasPtr::~HasPtr(){
+	if(--*use == 0){
+		delete ps;
+		delete use;
+	}
+}
+```
+
+拷贝赋值运算符与往常一样执行类似拷贝构造函数和析构函数的工作。即，它必须递增右侧运算对象的引用计数（即，拷贝构造函数的工作），并递减左侧运算对象的引用计数，在必要时释放使用的内存（即，析构函数的工作）<br>
+```cpp
+HasPtr& HasPtr::operator=(const HasPtr &rhs){
+	++*rhs.use;
+	if(--*use == 0){
+		delete ps;
+		delete use;
+	}
+   	ps = rhs.ps; // 将数据从rhs拷贝到本对象
+	i = rhs.i;
+	use = rhs.use;
+	return *this; //返回本对象
+}
+```
+
+📒 给定以下类，为其实现一个默认构造函数和必要的拷贝控制成员
+```cpp
+class TreeNode{
+	public:
+	TreeNode():value(string()),count(1){};
+	TreeNode(const TreeNode& tn):value(tn.value),count(tn.count),left(tn.left),right(tn.right){
+     ++count;
+	}
+	TreeNode& operator=(const TreeNode &tn);
+	~TreeNode(){
+		if(--count == 0){
+			if(left){
+				delete left;
+				left = nullptr;
+			}
+			if(right){
+				delete right;
+				right = nullptr;
+			}
+		}
+	};
+	private:
+	   string value;
+	   int count;
+	   TreeNode *left;
+	   TreeNode *right;
+}
+
+TreeNode& TreeNode::operator=(const TreeNode &tn){
+	++tn.count;
+	if(--count == 0){
+			if(left){
+				delete left;
+				left = nullptr;
+			}
+			if(right){
+				delete right;
+				right = nullptr;
+			}
+		}
+	value = tn.value
+	left = tn.left;
+	right = tn.right;
+	count = tn.count;
+	return *this;
+}
+// 记住啦，衰仔！呢度
+class BinStrTree{
+	public:
+	BinStrTree():root(new TreeNode()){}
+	BinStrTree(const BinStrTree &bst):root(new TreeNode(*bst.root)){}
+	BinStrTree& operator=(const BinStrTree &bst);
+	~BinStrTree(){delete root;}
+	private:
+	TreeNode *root;
+}
+BinStrTree& BinStrTree::operator=(const BinStrTree &bst){
+	TreeNode *new_root = new TreeNode(*bst.root);
+	delete root;
+	root = new_root;
+	return *this;
+}
+```
+## 交换操作
+除了定义拷贝控制成员，管理资源的类还通常定义一个名为swap的函数。对于那些与重排元素顺序的算法一起使用的类，定义swap是非常重要的。这类算法在需要交换两个元素时会调用swap<br>
+如果一个类定义了自己的swap，那么算法将使用类自定义版本。否则，算法将使用标准库定义的swap。
+### 编写自己的swap函数
+```cpp
+class HasPtr{
+	friend void swap(HasPtr&, HasPtr&);
+};
+inline void swap(HasPtr &lhs,HasPtr &rhs){
+	using swap;
+	swap(lhs.ps,rhs.ps); //交换指针，而不是string数据
+	swap(lhs.i,rhs.i); // 交换int成员
+}
+```
+swap的函数体对给定对象的每个数据成员调用swap。我们首先swap绑定rhs和lhs的对象的指针成员，然后是int成员。<br>
+📒 与拷贝控制成员不同，swap并不是必要的。但是，对于分配了资源的类，定义swap可能是一种很重要的优化手段。<br>
+### swap函数应该调用swap，而不是std::swap
+本🌰，数据成员是内置类型的，而内置类型是没有特定版本的swap的，所以本例中，对swap的调用会调用标准std::swap<br>
+但是，如果一个类的成员有自己类型特定的swap函数，调用std::swap就是错误的。
+```cpp
+void swap(HasPtr &lhs,HasPtr &rhs){
+	using swap;
+	swap(lhs.ps,rhs.ps); //交换指针，而不是string数据
+	swap(lhs.i,rhs.i); // 交换int成员
+}
+```
+每个swap调用应该都是未加限定的。即，每个调用都应该是swap，而不是std::swap
+### 在赋值运算符中使用swap
+定义swap的类通常用swap来定义他们的赋值运算符。**拷贝并交换**将左侧运算对象与右侧运算对象的一个副本进行交换：
+```cpp
+// 注意 rhs是按值传递的，意味着HasPtr的拷贝构造函数
+// 将右侧运算对象中的string拷贝到rhs
+HasPtr& HasPtr::operator=(HasPtr rhs){
+	// 交换左侧运算对象和局部变量rhs的内容
+	swap(*this,rhs); //rhs现在指向本对象曾经使用的内存
+	return *this; // rhs被销毁，从而delete了rhs中的指针
+}
+```
