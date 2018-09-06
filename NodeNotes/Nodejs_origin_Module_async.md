@@ -576,7 +576,8 @@ Promise/Deferred整体关系示意图如下<br>
 
 **Promise参考文档**<br>
 https://juejin.im/post/5a31d21e5188257dd239a7cc
-
+**深入理解Promise和Deferred**<br>
+https://www.jianshu.com/p/0e1c9bec17ad
 与事件发布/订阅模式相比，Promise/Deferred模式的API接口和抽象模型都十分简洁，从图中可以看出，它将业务不可变的部分封装在Deferred部分，将可变部分交给了Promise。<br>
 Q模块是Promise/A规范的一个实现，可以通过npm install q进行安装使用。<br>
 

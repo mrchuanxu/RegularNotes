@@ -648,3 +648,20 @@ HasPtr& HasPtr::operator=(HasPtr rhs){
 	return *this; // rhs被销毁，从而delete了rhs中的指针
 }
 ```
+在这个版本的赋值运算符中，参数并不是一个引用，我们将右侧运算对象以传值方式传递给了赋值运算符。因此，rhs右侧运算对象的一个副本。参数传递时拷贝HasPtr的操作会分配该对象的string的一个新副本。<br>
+在赋值运算符的函数体中，我们调用swap来交换rhs和*this中的数据成员。这个调用将左侧运算对象中原来保存的指针存入rhs中，并将rhs中原来的指针存入*this中。因此，在swap调用之后，*this中的指针成员将指向新分配的string---右侧运算对象中string的一个副本。<br>
+
+当赋值运算符结束时，rhs被销毁，HasPtr的析构函数将执行。此析构函数delete rhs 现在指向的内存，即，释放掉左侧运算对象中原来的内存。<br>**自动处理了自赋值情况且天然就是异常安全的**
+❓解释swap(HasPtr&,HasPtr&)中对swap调用不会导致递归循环。<br>
+其实这是三个不同的函数，参数类型不一样，所以不会导致递归循环。<br>
+❓为你的HasPtr类定义一个<运算符，并定义一个HasPtr的vector。为这个vector添加一些元素，并对他执行sort。注意何时会调用swap<br>
+```cpp
+bool operator<(const HasPtr& rhs, const HasPtr& lhs){
+	return *rhs.ps < *lhs.ps;
+}
+```
+❓类指针的 HasPtr 版本会从 swap 函数收益吗？如果会，得到了什么益处？如果不是，为什么？<br>
+不会。类值的版本利用swap交换指针不用进行内存分配，因此得到了性能上的提升。类指针的版本本来就不用进行内存分配，所以不会得到性能提升。<br>
+
+## 拷贝控制示例🌰
+
