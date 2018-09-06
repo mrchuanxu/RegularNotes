@@ -571,8 +571,30 @@ var promisify = function(res){
 ```js
 promisify(res).then(function(){},...)
 ```
-![Promise/Deferred整体关系示意图]()
+![Promise/Deferred整体关系示意图](./img/deferred_promise.png,"promise/deferred")
 
 **Promise参考文档**<br>
 https://juejin.im/post/5a31d21e5188257dd239a7cc
 
+与事件发布/订阅模式相比，Promise/Deferred模式的API接口和抽象模型都十分简洁，从图中可以看出，它将业务不可变的部分封装在Deferred部分，将可变部分交给了Promise。<br>
+Q模块是Promise/A规范的一个实现，可以通过npm install q进行安装使用。<br>
+
+```js
+/**
+* Create a Node-style callback that will resolve or reject the deferred
+* promise.
+*@ return a nodeback
+*/
+defer.prototype.makeNodeResolver=function(){
+    var self = this;
+    return function(error,value){
+        if(error){
+            self.reject(error);
+        }else if(arguments.length > 2){
+            self.resolve(array_slice(arguments,1));
+        }else{
+            self.resolve(value);
+        }
+    };
+};
+```
