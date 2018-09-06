@@ -571,6 +571,7 @@ var promisify = function(res){
 ```js
 promisify(res).then(function(){},...)
 ```
+Promise/Deferred整体关系示意图如下<br>
 ![Promise/Deferred整体关系示意图](./img/deferred_promise.png)
 
 **Promise参考文档**<br>
