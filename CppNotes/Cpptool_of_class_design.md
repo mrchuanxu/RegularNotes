@@ -664,4 +664,84 @@ bool operator<(const HasPtr& rhs, const HasPtr& lhs){
 不会。类值的版本利用swap交换指针不用进行内存分配，因此得到了性能上的提升。类指针的版本本来就不用进行内存分配，所以不会得到性能提升。<br>
 
 ## 拷贝控制示例🌰
+虽然通常来说分配资源的类更需要拷贝控制，但资源管理并不是一个类需要定义自己的拷贝控制成员的唯一原因。一些类也需要拷贝控制成员的帮助来进行薄记工作或其他操作<br>
+📒 拷贝赋值运算符通常执行拷贝构造函数和析构函数中也要完成的工作。这种情况下，公共的工作应该放在private的工具函数完成<br>
+```cpp
+// Message
+class Message{
+	friend class Folder;
+	public:
+	// folders 被隐式初始化为空集合
+	explicit Message(const string &str = ""):contents(str){}
+	// 拷贝控制成员，用来管理指向本Message的指针
+	Message(const Message&); // 拷贝构造函数
+	Message& operator=(const Message&); // 拷贝赋值运算符
+	~Message(); //析构函数
+	private:
+    string contents; // 消息文本
+	set<Folder*> folders; // 包含本Message的Folder
+	// 拷贝构造函数、拷贝赋值运算符和析构函数所使用的工具函数将本Message添加到指向参数的Folder中
+	void add_to_Folders(const Message&);
+	// 从folders中的每个Folder中删除本Message
+	void remove_from_Folders();
+};
 
+class Folders{
+    
+};
+// save and remove
+void Message::save(Folder &f){
+	folders.insert(&f);
+	f.addMsg(this);
+}
+
+void Message::remove(Folder &f){
+	folders.erase(&f);
+	f.remMsg(this);
+}
+// 当我们拷贝一个Message时，得到的副本与 原Message出现在相同的Folder中。因此，我们必须遍历Foloder指针的set，对每个指向原Message的Folder添加一个指向新Message的指针。拷贝构造函数和拷贝赋值运算符都需要做这个工作。
+void Message::add_to_Folders(const Message &m){
+	for(auto f:m.folders) // 对每个包含m的Folder
+	    f->addMsg(this);  // 向该Folder添加一个指向本Message的指针
+}
+
+// Message的拷贝构造函数拷贝给定对象的数据成员
+Message::Message(const Message &m):contents(m.contents),folders(m.folders){
+	add_to_Folders(m);
+}
+// 调用add_to_Folders将新创建的Message的指针添加到每个包含原Message的Folder中
+
+// 析构函数
+// 当一个Message被销毁时，我们必须从指向此Message的Folder中删除它。
+void Message::remove_from_Folders(){
+	for(auto f:folders)
+	f->remMsg(this);
+}
+Message::~Message(){
+	remove_from_Folders();
+}
+// 拷贝赋值运算符
+// 从左侧运算对象的folders中删除此Message的指针，然后再将指针添加到右侧运算对象的folders中，从而实现了自赋值
+Message& Message::operator=(const Message &rhs){
+	remove_from_Folders(); // 更新已有的Folder
+	contents = rhs.contents; //从rhs拷贝消息内容
+	folders = rhs.folders; //从rhs拷贝Folder指针
+	add_to_Folders(rhs);
+	return *this;
+}
+// 两遍扫描folders中每个成员来正确处理Folder指针
+void swap(Message &lhs, Message &rhs){
+	using std::swap;
+	for(auto f:lhs.folders)
+	f->remMsg(&lhs);
+	for(auto f:rhs.folders)
+	f->remMsg(&rhs);
+    swap(lhs.folders, rhs.folders);
+	swap(lhs.contents, rhs.contents);
+	for(auto f:lhs.folders) // 对每个包含lhs的Folder
+	    f->addMsg(&lhs);  // 向该Folder添加一个指向本Message的指针
+	for(auto f:rhs.folders) // 对每个包含rhs的Folder
+	f->addMsg(&rhs);  // 向该Folder添加一个指向本Message的指针
+	
+}
+```
