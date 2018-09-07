@@ -677,6 +677,8 @@ class Message{
 	Message(const Message&); // 拷贝构造函数
 	Message& operator=(const Message&); // 拷贝赋值运算符
 	~Message(); //析构函数
+	void save(Folder&);
+	void remove(Folder&);
 	private:
     string contents; // 消息文本
 	set<Folder*> folders; // 包含本Message的Folder
@@ -686,9 +688,24 @@ class Message{
 	void remove_from_Folders();
 };
 
-class Folders{
-    
+class Folder{
+    friend void swap(Message&, Message&);
+	friend void swap(Folder&, Folder&);
+	friend class Message;
+    public:
+	Folder() = default;
+	Folder(const Folder&);
+	Folder& operator=(const Folder&);
+	~Folder();
+	void print_debug();
+    private:
+	std::set<Message*> msgs;
+	void add_to_Message(const Folder&);
+	void remove_to_Message();
+	void addMsg(Message* m) { msgs.insert(m); }
+	void remMsg(Message *m) { msgs.erase(m); }
 };
+void swap(Folder&, Folder&);
 // save and remove
 void Message::save(Folder &f){
 	folders.insert(&f);
@@ -745,3 +762,17 @@ void swap(Message &lhs, Message &rhs){
 	
 }
 ```
+❓为什么Message成员save和remove的参数是一个Folder&？为什么不将参数定义为Folder或是const Folder&？<br>
+❕因为save和remove要更新指定的Folder<br>
+❓我们并未使用拷贝交换方式来设计Message的赋值运算符。你认为原因是什么？<br>
+❕对于动态分配内存个的例子来说，拷贝交换方式是一种简洁的设计。而这里的Message类并不需要动态分配内存，用拷贝交换方式只会增加实现的复杂度。<br>
+
+## 动态内存管理类
+某些类需要在运行时分配可变大小的内存空间。这种类通常可以（并且如果它们确实可以的话，一般应该）使用标准库容器来保存他们的数据。<br>
+但是，这一策略并不是对每个类都适用；某些类需要自己进行内存分配。这些类一般来说必须定义自己的拷贝成员来管理所分配的内存。<br>
+### 简化StrVec类的设计
+使用allocator来获得原始内存。由于allocator分配的内存是未构造的，我们将在需要添加新元素时用allocator的construct成员在原始内存中创建对象。类似的，当我们需要删除一个元素时，我们将使用destroy成员来销毁元素。<br>
+每个StrVec有三个指针成员指向其元素所使用的内存：<br>
+@elements, 指向分配的内存中的首元素<br>
+@first_free,指向最后一个实际元素之后的位置。<br>
+@cap,指向分配的内存末尾之后的位置<br>
