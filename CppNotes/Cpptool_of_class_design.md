@@ -790,6 +790,7 @@ class StrVec{
 	public:
 	StrVec():elements(nullptr),first_free(nullptr),cap(nullptr){}
 	StrVec(const StrVec&);
+	// StrVec(initializer_list<sting>);// 13.40
 	StrVec &operator=(const StrVec&);
 	~StrVec();
 	void push_back(const string&);
@@ -801,6 +802,7 @@ class StrVec{
 	private:
 	static allocator<string> alloc; //分配元素
 	// 被添加元素的函数所使用
+	// void range_initialize(const sting*,const string*); // 13.40
 	void chk_n_alloc() { if(size()==capacity()) reallocate();}
 	// 工具函数，被拷贝构造函数、赋值运算符和析构函数所使用
 	pair<string*, string*> alloc_n_copy(const string*, const string*);
@@ -833,6 +835,10 @@ void StrVec::free(){
 		alloc.deallocate(elements, cap-elements);
 	}
 } // destory函数会运行string的析构函数。string的析构函数会释放string自己分配的内存空间
+// 另一种写法
+void StrVec::free(){
+    for_each(elements, first_free,[this](string &rhs){ alloc.destory(&rhs);});
+}
 // 实现拷贝控制成员
 StrVec::StrVec(const StrVec &s){
     // 调用alloc_n_copy分配空间以容纳与(s中一样多的元素
@@ -889,6 +895,80 @@ void StrVec::reallocate(){
 }
 ```
 由于我们使用了移动构造函数，这些string管理的内存将不会被拷贝。相反，我们构造的每个string都会从elem指向的string那里接管内存的所有权。<br>
+```cpp
+// 编写自己的string类
+#include <memory>
+class String{
+	public:
+	String():String(""){}
+	String(const char*);
+	String(const String&);
+	String& operator=(const String&);
+	~String();
+	const char* c_str() const {return elements;}
+	size_t size() const {return end-elements;}
+	size_t lenght() const{return end-elements+1;}
+	private:
+	std::pair<char*, char*> alloc_n_copy(const char*,const char*);
+	void range_initializer(const char*, const char*);
+	void free();
+	private:
+	char *elements;
+	char *end;
+	std::allocator<char> alloc;
+}
+```
+实现自己的String类
+```cpp
+#include <algorithm>
+#include <iostream>
 
+std::pair<char*,char*> String::alloc_n_copy(const char* b, const char* e){
+     auto str = alloc.allocate(e-b);
+	 return {str,std::uninitialized_copy(b,e,str)};
+}
+
+void String::range_initializer(const char* first, const char* last){
+	auto newstr = alloc_n_copy(first,last);
+	elements = newstr.first;
+	end = newstr.second;
+}
+
+String::String(const char* s){
+	char *s1 = const_cast<char*>(s);
+	while(*s1){
+		++s1;
+	}
+	range_initializer(s,++s1);
+}
+
+String::String(const String& rhs){
+	range_initializer(rhs.elements,rhs,end);
+	cout<<"copy construct"<<endl;
+}
+
+void String::free(){
+	if(elements){
+		std::for_each(elements,end,[this](char &c){alloc.destory(&c);});
+		alloc.deallocate(elements, end-elements);
+	}
+}
+
+String::~String(){
+	free();
+}
+
+String& String::operator=(const String& rhs){
+	auto newstr = alloc_n_copy(rhs.elements,rhs,end);
+	free();
+	elements = newstr.first;
+	end = newstr.second;
+	std::cout<<"copy-assignment"<<std::endl;
+	return *this;
+}
+```
+
+## 对象移动
+新标准的一个最主要的特性是可以移动而非拷贝对象的能力。
 
 
