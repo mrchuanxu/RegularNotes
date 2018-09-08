@@ -776,3 +776,119 @@ void swap(Message &lhs, Message &rhs){
 @elements, 指向分配的内存中的首元素<br>
 @first_free,指向最后一个实际元素之后的位置。<br>
 @cap,指向分配的内存末尾之后的位置<br>
+![StrVec内存分配策略](./img/strVecStragy.png)
+各箭头从左往右分别是elements,first_free,cap。<br>
+除了这些指针外，StrVec还有一个名为alloc的静态成员，其类型为allocator<string>。alloc成员会分配StrVec使用的内存。<br>
+**四个工具函数：**<br>
+@ alloc_n_copy 会分配内存，并拷贝一个给定范围中的元素<br>
+@ free会销毁构造的元素并释放内存<br>
+@ chk_n_alloc 保证StrVec至少容纳一个新元素的空间。如果没有空间添加新元素，chk_n_alloc会调用reallocate来分配更多内存<br>
+@ reallocate在内存用完时为StrVec分配新内存<br>
+### StrVec类定义
+```cpp
+class StrVec{
+	public:
+	StrVec():elements(nullptr),first_free(nullptr),cap(nullptr){}
+	StrVec(const StrVec&);
+	StrVec &operator=(const StrVec&);
+	~StrVec();
+	void push_back(const string&);
+	size_t size() const{ return first_free - elements; }
+	size_t capacity() const {return cap-elements;}
+	string *begin() const { return elements; }
+	string *end() const { return first_free; }
+	// ...
+	private:
+	static allocator<string> alloc; //分配元素
+	// 被添加元素的函数所使用
+	void chk_n_alloc() { if(size()==capacity()) reallocate();}
+	// 工具函数，被拷贝构造函数、赋值运算符和析构函数所使用
+	pair<string*, string*> alloc_n_copy(const string*, const string*);
+	void free();
+	void reallocate();
+	string *elements;
+	string *first_free;
+	string *cap;
+};
+// 使用construct
+void StrVec::push_back(const string& s){
+	chk_n_alloc();
+	alloc.construct(first_free++, s);
+}
+// alloc_n_copy成员，类似vector，StrVec类有类值行为。当我们拷贝或赋值StrVec时，必须分配独立的内存，并从原StrVec对象拷贝元素至新对象
+// alloc_n_copy 成员会分配足够的内存来保存给定范围的元素，并将这些元素拷贝到新分配的内存中。此函数返回一个指针的pair，两个指针分别指向新空间的开始位置和拷贝的尾后的位置:
+pair<string *, string*> StrVec::alloc_n_copy(const string *b, const string *e){
+	// 分配空间保存给定范围中的元素
+	auto data = alloc.allocate(e-b);
+	// 初始化并返回一个pair，该pair由data和uninitialized_copy的返回值构成,uninitialized_copy(b,e,data)返回的是一个指针，指向最后一个构造元素之后的位置
+	return { data, uninitialized_copy(b,e,data)};
+}
+// free 成员 for循环调用allocator的destory成员，从构造的尾元素开始，到首元素为止，逆序销毁所有元素:
+void StrVec::free(){
+	// 不能传递给deallocate一个空指针，如果elements为0，函数什么也不做
+	if(elements){
+		//逆序销毁旧元素
+		for(auto p = first_free; p!=elements;)
+		alloc.destory(--p);
+		alloc.deallocate(elements, cap-elements);
+	}
+} // destory函数会运行string的析构函数。string的析构函数会释放string自己分配的内存空间
+// 实现拷贝控制成员
+StrVec::StrVec(const StrVec &s){
+    // 调用alloc_n_copy分配空间以容纳与(s中一样多的元素
+	auto newdata = alloc_n_copy(s.begin(),s.end());
+	elements = newdata.first;
+	first_free = cap = newdata.second;
+}
+// 析构函数
+StrVec &StrVec(){free();}
+// 拷贝赋值运算符
+StrVec &StrVec::operator=(const StrVec &rhs){
+	// 调用alloc_n_copy分配内存，大小与rhs中元素占用空间一样多
+	auto data = alloc_n_copy(ths.begin(),rhs.end());
+	free();
+	elements = data.first;
+	first_free = cap = data.second;
+	return *this;
+}
+```
+当我们用allocator分配内存时，必须记住内存是未构造的。为了使用此原始内存，我们必须调用construct，在此内存中构造一个对象。传递给construct的第一个参数必须是一个指针，指向调用allocate所分配的未构造的内存空间。剩余参数确定用哪个构造函数来构造对象。<br>
+一旦元素被销毁，我们就调用deallocate来释放本StrVec对象分配的内存空间。我们传递给deallocate的指针必须时之前某次allocate调用所返回的指针。因此在调用deallocate之前我们首先检查elements是否为空。<br>
+### 在重新分配内存的过程中移动而不是拷贝元素
+reallocate成员函数应该做什么?<br>
+@ 一个新的、更大的string数组分配内存。<br>
+@ 在内存空间的前一部分构造对象，保存现有元素。<br>
+@ 销毁原内存空间中的元素，并释放这块内存<br>
+为一个StrVec重新分配内存空间会引起从旧内存空间到新内存空间逐个拷贝string。<br>
+由于string的行为类似值，每个string对构成它的所有字符都会保存自己的一份副本。拷贝一个string必须为这些字符分配内存空间，而销毁一个string必须释放所占用的内存。<br>
+### 移动构造函数和std::move
+有一些标准库类，包括string，都定义了所谓的“移动构造函数”。关于string的移动构造函数如何工作的细节，以及有关实现的任何其他细节，目前尚未公开❕<br>
+A. 但是，我们知道，移动构造函数通常是将资源从给定对象“移动”而不是拷贝到正在创建的对象。而且我们知道标准库保证“移后源” **string仍然保持一个有效的、可析构的状态。**<br>
+对于string，😯我们可以想象每个string都有一个指向char数组的指针。可以假定string的移动构造函数进行了指针的拷贝，而不是为字符分配内存空间然后拷贝字符。<br>
+B. 名为move的标准库函数，它定义在utility头文件中。两点<br>
+B.1 当reallocate在新内存中构造string时，它必须调用move来表示希望使用string的移动构造函数。如果它漏掉了move调用，将会使用string的拷贝构造函数。<br>
+B.2 我们通常不为move提供一个using声明。当我们使用move时，直接调用std::move而不是move
+### reallocate成员
+我们每次重新分配内存时都会将StrVec的容量加倍。如果StrVec为空，我们将分配容纳一个元素的空间：
+```cpp
+void StrVec::reallocate(){
+	// 分配当前大小的两倍的内存空间
+	auto newcapacity = size()?2*size():1;
+	// 分配新内存
+	auto newdata = alloc.allocate(newcapacity);
+	// 将数据从旧内存移动到新内存
+	auto dest = newdata; // 指向新数组中下一个空闲位置
+	auto elem = elements; // 指向旧数组中的下一个元素
+	for(size_t i = 0; i != size(); ++i)
+	    alloc.construct(dest++,std::move(*elem++)); // 这里要注意时std::move❕
+	free();// 一旦我们移动完元素就释放旧内粗空间
+	// 更新我们的数据结构，执行新元素
+	elements = newdata;
+	first_free = dest;
+	cap = elements + newcapacity;
+}
+```
+由于我们使用了移动构造函数，这些string管理的内存将不会被拷贝。相反，我们构造的每个string都会从elem指向的string那里接管内存的所有权。<br>
+
+
+
