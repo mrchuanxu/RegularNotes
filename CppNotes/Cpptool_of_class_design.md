@@ -1125,3 +1125,156 @@ Foo y(x);// 拷贝构造函数；x是一个左值
 Foo z(std::move(x)); // 拷贝构造函数，因为未定义移动构造函数。 返回一个绑定到x的Foo&&
 ```
 一般情况下，拷贝构造函数满足对应的移动构造函数的要求：它会拷贝给定对象，并将原对象置于有效状态。实际上，拷贝构造函数甚至不会改变原对象的值。<br>
+### 拷贝并交换赋值运算符和移动操作
+如果我们为HasPtr添加一个移动构造函数，它实际上也会获得一个移动赋值运算符：<br>
+```cpp
+class HasPtr{
+	public:
+	// 添加的移动构造函数
+	HasPtr(HasPtr &&p) noexcept:ps(p.ps),i(p.i){p.ps = 0;}
+	// 赋值运算符既是移动赋值运算符，也是拷贝赋值运算符
+	HasPtr& operator=(HasPtr rhs){swap(*this,rhs); return *this; }
+};
+```
+上述类添加了一个移动构造函数，它接管了给定实参的值。构造函数体将给定的HasPtr的指针置为0，从而确保销毁移后源对象是安全的。此函数不会抛出异常，因此我们将其标记为noexcept。<br>
+现在我们观察一下赋值运算符。此运算符有一个非引用参数，这意味着此参数要进行拷贝初始化。依赖于实参的类型，拷贝初始化要么使用拷贝构造函数，要么使用移动构造函数---左值被拷贝，右值被移动。因此，单一的赋值运算符就实现了拷贝赋值运算符和移动赋值运算符两种功能。<br>
+例如假定hp和hp2都是HasPtr对象：
+```cpp
+hp = hp2; // hp2 是一个左值；hp2通过拷贝构造函数来拷贝
+hp = std::move(hp2); // 移动构造函数移动hp2
+```
+在第一个赋值中，右侧运算对象是一个左值，因此移动构造函数是不可行的。rhs将使用拷贝构造函数来初始化。拷贝构造函数将分配一个新string，并拷贝hp2指向的string。<br>
+在第二个赋值中，我们调用std::move将一个右值引用绑定到hp2上。在此情况下，拷贝构造函数和移动构造函数都是可行的。但是，由于实参是一个右值引用，移动构造函数是精确匹配的。移动构造函数从hp2拷贝指针，而不会分配任何内存。<br>
+不管使用的是拷贝构造函数还是移动构造函数，赋值运算符的函数体都swap两个运算对象的状态。交换HasPtr会交换两个对象的指针（及int）成员。在swap之后，rhs中的指针将指向原来左侧运算对象所拥有的string。当rhs离开作用域时，这个string将被销毁<br>
+### Message类的移动操作
+移动构造函数和移动赋值运算符都需要更新Folder指针.
+```cpp
+void Message::move_Folders(Message *m){
+	folders = std::move(m->folders); // 使用set的移动赋值运算符
+	for(auto f : folders){ // 对每个Folder
+		f->remMsg(m); // 从Folder中删除旧Message
+		f->addMsg(this); //将本Message添加到Folder中
+	}
+	m->folders.clear(); // 确保销毁m是无害的
+}
+```
+以上代码值得⚠️ 的是：向set插入一个元素可能会跑出一个异常---向容器添加元素的操作要求分配内存，意味着可能会抛出一个bad_alloc异常。<br>
+Message的移动构造函数调用move来移动contents，并默认初始化自己的folders成员：
+```cpp
+Message::Message(Message &&m):contents(std::move(m.contents)){
+	move_Folders(&m); // 移动folders并更新Folder指针
+}
+```
+移动赋值运算符直接检查自赋值情况：
+```cpp
+Message& Message::operator=(Message &&rhs){
+	if(this != &rhs){ // 直接检查自赋值情况
+		remove_from_Folders();
+		contents = std::move(rhs.contents); // 移动赋值运算符
+		move_Folders(&rhs); // 重置Folders指向本Message
+	}
+	return *this;
+}
+```
+与任何赋值运算符一样，移动赋值运算符必须销毁左侧运算对象的旧状态。
+### 移动迭代器
+uninitialized_copy替换StrVec的reallocate成员来构造新分配的内存：**它对元素进行拷贝操作。**<br>
+**新标准库中定义了一种移动迭代器适配器（move iterator）**。一个移动迭代器通过改变给定迭代器的解引用运算符的行为来适配此迭代器。<br>
+一般来说，一个迭代器的解引用运算符返回一个指向元素的左值。**与其他迭代器不同，移动迭代器的解引用运算符生成一个右值引用。**<br>
+标准库移动迭代器make_move_iterator函数将一个普通迭代器转换为一个移动迭代器。此函数接受一个迭代器参数，返回一个移动迭代器。<br>
+移动迭代器支持正常的迭代器操作。<br>我们可以将一对移动迭代器传递给算法。特别的，可以将移动迭代器传递给unitialized_copy
+```cpp
+void StrVec::reallocate(){
+	auto newcapacity = size()?2*size():1;
+	auto first = alloc.allocate(newcapacity);
+	auto last = unitialized_copy(make_move_iterator(begin()),make_move_iterator(end()),first);
+	free();
+	elements = first;
+	first_free = last;
+	cap = elements+newcapacity;
+}
+```
+unitialized_copy对输入序列中的每个元素调用construct来将元素“拷贝”到目的位置。此算法使用迭代器的解引用运算符从输入序列中提取元素。由于我们传递给它的是移动迭代器，因此解引用运算符生成的是一个右值引用，这意味着construct将使用移动构造函数来构造元素。<br>
+⚠️ 不要随意使用移动操作。学到这里才叫人不要随意使用移动操作，这的😯 多么痛的领悟......<br>
+由于一个移后源对象具有不确定的状态，对其调用std::move是危险的。当我们调用move时，必须绝对确认移后源对象没有其他用户。<br>
+❓如果我们为 HasPtr 定义了移动赋值运算符，但未改变拷贝并交换运算符，会发生什么？编写代码验证你的答案。
+```cpp
+	error: ambiguous overload for 'operator=' (operand types are 'HasPtr' and 'std::remove_reference<HasPtr&>::type { aka HasPtr }')
+	hp1 = std::move(*pH);
+	^
+```
+## 右值引用和成员函数
+允许移动的成员函数通常使用与拷贝/移动构造函数和赋值运算符相同的参数模式---☝️ 一个版本接受一个指向const的左值引用，第二个版本接受一个指向非const的右值引用。<br>
+定义了push_back的标准库容器提供了两个版本：一个🈶️ 一个右值引用参数，而另一个版本🈶️ 一个const左值引用。<br>
+```cpp
+void push_back(const X&); // 拷贝，绑定到任意类型的X
+void push_back(X&&); // 移动，只能绑定到类型X的可修改的右值
+```
+作为一个具体的🌰 :
+```cpp
+class StrVec{
+	public:
+	void push_back(const std::string&); // 拷贝，绑定到任意类型的X
+    void push_back(string&&); // 移动，只能绑定到类型X的可修改的右值
+};
+void StrVec::push_back(const string& s){
+	chk_n_alloc();
+	alloc.construct(first_free++,s); // 在first_free 指向的元素中构造s的副本
+}
+void StrVec::push_back(string &&s){
+	chk_n_alloc(); //如果需要的话为StrVec重新分配内存。
+	alloc.construct(first_free++,std::move(s));
+}
+```
+### 右值和左值引用成员函数
+通常我们在一个对象上调用成员函数，而不管该对象是一个左值还是一个右值。<br>
+阻止允许向右值赋值,强制使用左侧运算对象（即，this指向的对象）是一个左值。<br>
+在参数列表后放置一个引用限定符：
+```cpp
+class Foo{
+	public:
+	Foo &operator=(const Foo&) &; // 限定只能向可修改的左值赋值
+}
+Foo &Foo::operator=(const Foo &rhs) &{
+	return *this;
+}
+```
+引用限定符可能是&或&&，分别指出this可以指向一个左值或右值。类似const限定符，引用限定符只能用于（非static） 成员函数，且必须同时出现在函数的声明和定义中。<br>
+&**用于左值**，&&**用于右值**<br>
+一个函数可以同时用const和引用限定。在此情况下，引用限定符必须跟随在const限定符之后。
+### 重载和引用函数
+综合引用限定符和const来区分一个成员函数的重载版本。<br>
+🌰：
+```cpp
+class Foo{
+	public:
+	Foo sorted() &&;
+	Foo sorted() const &;
+	private:
+	vector<int> data;
+}
+
+Foo Foo::sorted() &&{
+	sort(data.begin(),data.end());
+	return *this;
+}
+Foo Foo::sorted() const &{
+	Foo ret(*this);
+	sort(ret.data.begin(),ret.data.end()); // 不能改变原对象，因此就需要在排序前拷贝data
+	return ret;
+};
+```
+如果我们定义两个或两个以上具有同名和相同参数列表的成员函数，就必须对所有函数都加上引用限定符，或者都不加。<br>
+❓为你的 StrBlob 添加一个右值引用版本的 push_back。
+```cpp
+void push_back(string &&s) { data->push_back(std::move(s)); }
+```
+❓如果 sorted 定义如下，会发生什么
+```cpp
+Foo Foo::sorted() const & {
+	Foo ret(*this);
+	return ret.sorted();
+}
+```
+会产生递归并且最终溢出。
+0909 13章完❕
