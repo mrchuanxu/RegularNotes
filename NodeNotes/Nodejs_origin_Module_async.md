@@ -587,7 +587,7 @@ Q模块是Promise/A规范的一个实现，可以通过npm install q进行安装
 * promise.
 *@ return a nodeback
 */
-defer.prototype.makeNodeResolver=function(){
+defer.prototype.makeNodeResolver = function(){
     var self = this;
     return function(error,value){
         if(error){
@@ -600,3 +600,63 @@ defer.prototype.makeNodeResolver=function(){
     };
 };
 ```
+可以看到这里是一个高阶函数的使用，makeNodeResolver返回一个Node风格的回调函数。对于fs.readFile()的调用，将会演化为
+```js
+var readFile = function(file,encoding){
+    var deferred = Q.defer();
+    fs.reafFile(file,encoding,deferred.makeNodeResolver());
+    return deferred.promise;
+}
+```
+定义之后的调用如下
+```js
+readFile('foo.txt','utf-8').then(function(data){
+    // success case
+},function(err){
+    // failed case
+});
+```
+Promise通过封装异步调用，实现了正向用例和反向用例的分离以及逻辑处理延迟，这使得回调函数相对优雅。<br>
+Q通过Promise()可以实现延迟处理，以及通过多次调用then()附加更多结果处理逻辑.<br>
+@ Promise 需要封装，但是强大，具有很强的侵入性。<br>
+@ 纯粹的函数则较为轻量，但功能相对弱小。<br>
+#### Promise中的多异步协作
+多个异步调用
+```js
+Deferred.prototype.all = function(promise){
+    var count = promises.length;
+    var that = this;
+    var results = [];
+    promises.forEach(function(promise,i){
+        promise.then(function(data){
+            count--;
+            results[i] = data;
+            if(count === 0){
+                that.resolve(results);
+            }
+        },function(err){
+            that.reject(err);
+        });
+    });
+    return this.promise;
+}
+```
+🌰 ：
+```js
+var promise1 = readFile('q.txt');
+var promise2 = readFile('r.txt');
+var deferred = new Deferred();
+deferred.all([promise1,promise2]).then(function(results){
+// success data
+},function(err){
+// error data
+});
+```
+这里的all()方法抽象多个异步操作。但是有缺陷，一个失败，全盘皆输。
+#### Promise的进阶知识
+Promise 的秘诀其实在于对队列的操作。<br>
+解决同步调用问题的答案也就是采用Deferred模式。<br>
+Pyramid of Doom -- 恶魔金字塔
+##### 支持序列执行的Promise
+链式调用
+
