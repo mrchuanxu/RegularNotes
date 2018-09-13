@@ -34,6 +34,145 @@ async function PromiseError(){
 ## await是啥？
 异步等待（async wait)。任何async函数都会默认返回promise，并且这个rpmise解析的值都将会示这个函数的返回值，而async函数必须等待内部所有的await命令的Promise对象执行完，才会发生状态改变。<br>
 打个比方：await是美女，async是老司机，老司机必须等美女齐了再开车<br>
+就是说，必须等所有的await函数执行完毕后，才会告诉promise，我成功了还是失败了，执行then或者catch<br>
+```js
+async function awaitReturn(){
+    return await 'a';
+};
+awaitReturn().then(success => console.log('success',success)).catch(error => console.log('fail',error));
 ```
+在这个函数里，有一个await函数，async会等到`await 'a'`这一步执行完了才会返回`promise`状态，毫无疑问，判定`resolved`。<br>
+很多人以为await会一直等待之后的表达式执行完之后才会继续执行后面的代码，实际上await是一个让出线程的标志。await后面的函数会先执行一遍，然后就会跳出整个`async`函数来执行后面js栈的代码。等本轮事件循环执行完之后又会跳回到async函数中等待`await`后面的表达式的返回值，如果返回值为非promise则继续执行async函数后面的代码，否则将返回的`promise`放入`Promise`队列。<br>
+举个🌰 
+```js
+const timeoutFn = function(timeout){
+    return new Promise(function(resolve){
+        return setTimrout(resolve,timeout);
+    });
+}
+async function fn(){
+    await timeoutFn(1000);
+    await timeoutFn(2000);
+    return 'complete';
+}
+fn().then(success => console.log(success));
+```
+这个🌰，要执行函数内所有的await函数才会返回状态，结构是执行完毕三秒后才会弹出`complete` <br>
+@ 正常情况下，await命令后面跟着的是Promise，如果不是的话，也会被转换成一个立即resolve的Promise<br>
+```js
+function timeout(time){
+    return new Promise(function(resolve){
+        return setTimeout(function(){ 
+                    return resolve(time + 200)
+               },time);
+    })
+}
 
+function first(time){
+    console.log('第一次延迟了' + time );
+    return timeout(time);
+}
+function second(time){
+    console.log('第二次延迟了' + time );
+    return timeout(time);
+}
+function third(time){
+    console.log('第三次延迟了' + time );
+    return timeout(time);
+}
+
+// A.
+function start(){
+    console.log('START');
+    const time1 = 500;
+    first(time1).then(time2 => second(time2) )
+                .then(time3 => third(time3)  )
+                .then(res => {
+                              console.log('最后一次延迟' + res );
+                              console.timeEnd('END');
+                             })
+};
+start();
+// B.效果同A
+async function start() {
+    console.log('START');
+    const time1 = 500;
+    const time2 = await first(time1);
+    const time3 = await second(time2);
+    const res = await third(time3);
+    console.log(`最后一次延迟${res}`);
+    console.log('END');
+}
+start();
+```
+但是要是await报错？怎么拌？（凉拌炒鸡蛋，好吃不好看）<br>
+那就返回reject咯...<br>
+```js
+let last;
+async function throwError() {  
+    await Promise.reject('error');    
+    last = await '没有执行'; 
+}
+throwError().then(success => console.log('成功', last))
+            .catch(error => console.log('失败',last))
+```
+上面一旦reject，就立即停止往下执行，导致last不报错。其实这里可以用try/catch一下<br>
+```js
+let last;
+async function throwError() {  
+    try{  
+       await Promise.reject('error');    
+       last = await '没有执行'; 
+    }catch(error){
+        console.log('has Error stop');
+    }
+}
+throwError().then(success => console.log('成功', last))
+            .catch(error => console.log('失败',last))
+```
+下面看一个🌰：
+```js
+function testSometing() {
+    console.log("testSomething");
+    return "return testSomething";
+}
+
+async function testAsync() {
+    console.log("testAsync");
+    return Promise.resolve("hello async");
+}
+
+async function test() {
+    console.log("test start...");
+
+    const testFn1 = await testSometing();
+    console.log(testFn1);
+
+    const testFn2 = await testAsync();
+    console.log(testFn2);
+
+    console.log('test end...');
+}
+
+test();
+
+var promiseFn = new Promise((resolve)=> { 
+                    console.log("promise START...");
+                    resolve("promise RESOLVE");
+                });
+promiseFn.then((val)=> console.log(val));
+
+console.log("===END===")
+```
+观众们可以回去尝试一下这段代码<br>
+下面我们解释一下<br>
+首先test()就肯定打印出test start...<br>
+然后 await，先执行testSometing()，打印test Someting，但是return就不会返回，说好了，跑完await，跳出去async，再跳回来在执行返回值.<br>
+之后因为await会让出线程就会去执行后面的。testAsync是async的，所以执行完毕就会返回resolve，就会叫promiseFn打印出‘promise START'。<br>
+紧接着，会把Promise resolve("promise RESOLVE");放到Promise队列，继续执行打印===END===。<br>
+OK，本轮事件循环执行结束后，就跳到async中，test()函数，等待之前await后面表达式的返回值，因为testSometng()不是async函数，所以返回的是一个字符串"return test Someting"。<br>
+然后，test()继续走啊走，执行到testFn2()，再跳出test()，打印testAsync,此时，事件循环就到了Promise的队列，执行promiseFn.then((val)=> console.log(val));打印promise RESOLVE<br>
+后来，又跳回到test函数继续执行console.log(testFn2)返回值，打印‘hello async‘，最后打印test end...<br>
+
+好了，更多尝试请自便，这一种❤新的编写异步代码的新方法。建立在promise之上，非阻塞。<br>
 
