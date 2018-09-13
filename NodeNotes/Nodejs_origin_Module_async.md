@@ -659,4 +659,64 @@ Promise 的秘诀其实在于对队列的操作。<br>
 Pyramid of Doom -- 恶魔金字塔
 ##### 支持序列执行的Promise
 链式调用
+```js
+var Deferred = function(){
+    this.promise = new Promise();
+};
+
+// 完成态
+Deferred.prototype.resolve = function(obj){
+    var promise = this.promise;
+    var handler;
+    while((handler = promise.queue.shift())){
+        if(handler && handler.fulfilled){
+            var ret = handler.fulfilled(obj);
+            if(ret && ret.isPromise){
+                ret.queue = promise.queue;
+                this.promise = ret;
+                return;
+            }
+        }
+    }
+}
+// 失败态
+Deferred.prototype.reject = function(err){
+    var promise = this.promise;
+    var handler;
+    while((handler = promise.queue.shift())){
+        if(handler && handler.error){
+            var ret = handler.error(err);
+            if(ret && ret.isPromise){
+                ret.queue = promise.queue;
+                this.promise = ret;
+                return;
+            }
+        }
+    }
+}
+
+// 生成回调函数
+Deferred.prototype.callback = function(){
+    var that = this;
+    return function(err,file){
+        if(err){
+            return that.reject(err);
+        }
+        that.resolve(file);
+    }
+}
+
+var Promise = function(){
+    // 队列用于存储待执行的回调函数
+    this.queue = [];
+    this.isPromise = true;
+}
+
+Promise.prototype.then = function(fulfilledHandler,errorHandler,progressHandler){
+    ...
+}
+```
+要让Promise支持链式执行，两个步骤：<br>
+@ 将所有的回调都存到执行中<br>
+@ Promise 完成时，逐个执行回调，一旦检测到返回了新的Promise对象，停止执行，然后将当前Deferred对象的Promise引用改变为新的Promise对象，并将队列中余下的回调转交给它。<br>
 
