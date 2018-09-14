@@ -104,3 +104,72 @@ ostream &operator<<(ostream &os, const Sales_data &item){
 用于内置类型的输出运算符不太考虑格式化操作，尤其不会打印换行符，用户希望类的输出运算符也像如此行事。
 ##### 输入输出运算符必须是非成员函数
 假设输入输出运算符是某个类的成员，则它们也必须是istream或ostream的成员。然而，这两个类属于标准库，并且我们无法给标准库中的类添加任何成员。<br>
+因此，如果我们希望为类自定义IO运算符，则必须将其定义成非成员函数。**当然，IO运算符通常需要读写类的非公有数据成员，所以IO运算符一般被声明为友元。**<br>
+```cpp
+class Sales_data{
+    friend ostream &operator<<(ostream &os, const Sales_data &item);
+    ...
+}
+```
+
+```cpp
+class String{
+    friend ostream &operator<<(ostream &os, const String&);
+}
+
+ostream &operator<<(ostream &os, const String &s){
+    char *c =  const_cast<char*>(s.c_str());
+    while(*c)
+        os<<*c++;
+    return os;
+}
+```
+### 重载输入运算符>>
+@ 输入运算符的第一个形参是运算符将要读取的流的引用。<br>
+@ 第二个形参时将要读入到的（非常量）对象的引用。<br>
+@ 该运算符通常会返回某个给定流的引用。<br>
+第二个形参之所以必须是个非常量是因为输入运算符本身的目的就是将数据读入到这个对象中<br>
+##### Sales_data的输入运算符
+吃个🌰 ：
+```cpp
+istream &operator>>(istream &is, Sales_data &item){
+    double price; // 不需要初始化，因为我们将先读入数据到price，之后才使用它
+    is>>item.bookNo >> item.units_sold >> price;
+    if(is)
+        item.revenue = item.units_sold * price;
+    else
+        item = Sales_data();// 输入失败就赋予默认值，确保对象处于正确的状态
+    return is;
+}
+```
+📒 输入运算符必须处理输入可能失败的情况，而输出运算符不需要<br>
+##### 输入时的错误
+@ 当流含有错误类型的数据时读取操作可能失败。<br>
+@ 当读取操作到达文件末尾或者遇到输入流的其他错误时也会失败<br>
+🏊‍♀️ 当读取操作发生错误时，输入运算符应该负责从错误中恢复。<br>
+#### 标示错误
+一些输入运算符需要做更多数据验证的工作。<br>
+通常情况下，输入运算符只设置failbit。除此之外，设置eofbit表示文件耗尽，而设置badbit表示流被破坏。最好的方式是由IO标准库来标示这些错误。<br>
+```cpp
+class Sales_data{
+    friend istream &operator>>(istream &is, Sales_data &item);
+    ...
+}
+istream &operatr>>(istream &is,Sales_data &item){
+    ...
+}
+```
+### 算术和关系运算符
+@ 算术和关系运算符定义成非成员函数以允许对左侧或右侧的运算对象进行转换。<br>
+@ 因为这些运算符一般不需要改变运算对象的状态，所以形参都是常量的引用。<br>
+算术运算符通常会计算它的两个运算对象并得到一个新值，这个值有别于任意一个运算对象，常常位于一个局部变量之内，操作完成后返回该局部变量的副本作为其结果。<br>
+如果定义了算术运算符，则它一般也会定义一个对应的复合赋值运算符。此时，最有效的方式是使用复合赋值来定义算术运算符：
+```cpp
+Sales_data operator+(const Sales_Data &lhs, const Sales_data &rhs){
+    Sales_Data sum = lhs; 
+    sum += rhs; // 将rhs加到sum中
+    return sum;
+}
+```
+与原来的add函数完全等价。<br>
+💡 如果类同时定义了算术运算符和相关的复合赋值运算符，则通常情况下应该使用复合赋值来实现算术运算符。<br>
