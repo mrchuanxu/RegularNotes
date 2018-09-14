@@ -719,4 +719,12 @@ Promise.prototype.then = function(fulfilledHandler,errorHandler,progressHandler)
 要让Promise支持链式执行，两个步骤：<br>
 @ 将所有的回调都存到执行中<br>
 @ Promise 完成时，逐个执行回调，一旦检测到返回了新的Promise对象，停止执行，然后将当前Deferred对象的Promise引用改变为新的Promise对象，并将队列中余下的回调转交给它。<br>
+#### 流程控制库
+前面叙述了最为主流的模式---事件发布/订阅模式和Promise/Deferred模式，这些是经典的模式或者是写进了规范的解决方案。本节介绍一下非模式化的应用，虽然不规范，但是很灵活。<br>
+##### 1. 尾触发与Next
+除了事件和Promise外，还有一类方法是需要手工调用才能持续执行后续调用的，我们将此类方法叫做尾触发，即关键字**next**.<br>
+先看一张图<br>
+![中间件通过队列形成一个处理流](./img/nodejs_middle.png)<br>
+中间件机制使得在处理网络请求时，可以像面向切面编程一样进行过滤、验证、日志等功能，而不与具体业务逻辑产生关联，以致产生耦合。<br>
+
 
