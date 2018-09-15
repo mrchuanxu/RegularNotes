@@ -266,3 +266,133 @@ if(svec.size() && svec[0].empty()){
 ```
 这个跟匹配的const有关系！
 ### 递增和递减运算符
+在迭代器类中通常会实现递增运算符(++)和递减(--)运算符，这两种运算符使得类可以在元素的序列中前后移动。C++语言并不要求递增和递减运算符必须是类的成员，但是因为它们改变的正好是所操作对象的状态，所以建议将其设定为成员函数。<br>
+为类定义两个版本的递增递减运算符（因为前置，um...后置）。<br>
+#### 定义前置递增/递减运算符
+```cpp
+class StrBlobPtr{
+  public:
+  // 递增和递减运算符
+  StrBlobPtr& operator++();
+  StrBlobPtr& operator--();
+  ...
+}
+```
+💡 为了与内置版本保持一致，前置运算符应该返回递增或递减后对象的引用。<br>
+工作机理：<br>
+首先调用check函数检验StrBlobPtr是否有效，如果是，接着检查给定的索引值是否有效。如果check函数没有抛出异常，则运算符返回对象的引用。<br>
+在递增运算符的例子中，我们把curr的当前值传递给check函数。如果这个值小于vector的大小，则check正常返回；否则，如果curr已经到达了vector的末尾，check将抛出异常：<br>
+```cpp
+// 前置版本： 返回递增/递减运算对象的引用
+StrBlobPtr& StrBlobPtr::operator++(){
+  // 如果curr已经指向了容器的尾后位置，则无法递增它
+  check(curr,"increment past end of StrBlobPtr");
+  ++ curr; // 将curr在当前状态下向前移动一个元素
+  return *this;
+}
+```
+```cpp
+// 前置版本： 返回递增/递减运算对象的引用
+StrBlobPtr& StrBlobPtr::operator++(){
+  // 如果curr是0，则继续递减它将产生一个无效下标
+  -- curr; // 将curr在当前状态下向后移动一个元素
+  check(curr,"increment past end of StrBlobPtr");
+  return *this;
+}
+```
+#### 区分前置和后置运算符
+要想同时定义前置和后置运算符，必须首先解决一个问题，即普通的重载形式无法区分这两种情况。前置和后置版本使用的是同一个符号，意味着其重载版本所用的名字将是相同的，并且运算对象的数量和类型也相同。<br>
+为了解决这个问题，后置版本接受一个**额外的（不被使用）int类型的形参。**当我们使用后置运算符时，编译器为这个形参提供一个值为0的实参。尽管从语法上来说后置函数可以使用这个额外的形参，但是在实际过程中通常不会这么做。<br>
+这个形参的唯一作用就是区分前置版本和后置版本的函数，而不是真的要在实现后置版本时参与运算。<br>
+```cpp
+class StrBlobPtr{
+  public:
+  // 递增和递减运算符
+  StrBlobPtr operator++(int); // 后置版本
+  StrBlobPtr operator--(int);
+}
+```
+💡 为了与内置版本保持一致，后置运算符应该返回对象的原值（递增或递减之前的值），返回的形式是一个值而非引用。<br>
+```cpp
+StrBlobPtr StrBlobPtr::operator++(int){
+  // 此处无需检查有效性，调用前置递增运算时才需要检查
+  StrBlobPtr ret = *this; // 记录当前的值
+  ++*this; // 向前移动一个元素，前置++需要检查递增的有效性
+  return ret; // 返回之前的记录的状态
+}
+```
+```cpp
+StrBlobPtr StrBlobPtr::operator--(int){
+    // 此处无需检查有效性，调用前置递减运算时才需要检查
+  StrBlobPtr ret = *this; // 记录当前的值
+  --*this; // 向后移动一个元素，前置--需要检查递减的有效性
+  return ret; // 返回之前的记录的状态
+}
+```
+@ 无须为int命名。<br>
+#### 显式地调用后置运算符
+调用要为整形参数传递一个值。<br>
+```cpp
+StrBlobPtr p(a); // p指向a1中的vector
+p.operator++(0); // 后置
+p.operator++(); // 前置
+```
+❓ 为什么不定义const版本的递增和递减运算符？<br>
+因为递增和递减会改变对象本身，所以定义const版本毫无意义<br>
+### 成员访问运算符
+在迭代器类及智能指针类中常常用到解引用运算符(*)和箭头运算符(->)。<br>
+```cpp
+class StrBlobPtr{
+  public:
+  std::string& operator*()const{
+    auto p = check(curr, "dereference past end");
+    return (*p)[curr]; 
+    // (*p) 是对象所指的vector
+  }
+  std::string* operator->()const{
+    // 将实际工作委托给解引用运算符
+    return & this->operator*();
+  }
+  ...
+}
+```
+解引用运算符首先检查curr是否仍在作用范围内，如果是，则返回curr所指元素的一个引用。箭头运算符不执行任何自己的操作，而是调用解引用运算符并返回解引用结果的元素的地址。<br>
+📒 箭头运算符必须是类的成员。解引用运算符通常也是类的成员，尽管并非必须如此。<br>
+⚠️ 我们将这两个运算符定义成了const成员，这是因为与递增和递减运算符不一样，获取一个元素并不会改变`StrBlobPtr`对象的状态。同时，它们的返回值分别是非常量`string`的引用或指针，因为一个StrBlobPtr只能绑定到非常量的StrBlob对象。<br>
+用法
+```cpp
+StrBlob a1 = {"hi","wolf"};
+StrBlobPtr p(a1);
+*p = "okey";
+cout << p->size() << endl; // 首元素的大小
+cout << (*p).size() << endl; // 等价p->size()
+```
+#### 对箭头运算符返回值的限定
+和大多数其他运算符一样（尽管这样做不太好），我们能令operator*完成任何我们指定的操作。箭头运算符则不是，它永远不会丢掉成员访问这个最基本的含义。<br>
+当我们重载箭头时，可以改变的是箭头从哪个对象当中获取成员，**而箭头获取成员这一事实则永远不变。**<br>
+对于形如point->mem的表达式来说，point必须是指向类对象的指针或者是一个重载了operator->的类的对象。根据point类型的不同，point->mem分别等价于
+```cpp
+(*point).mem; // point是一个内置的指针类型
+point.operator()->mem; // point是类的一个对象
+```
+除此之外，代码都将发生错误。point->mem的执行过程如下所示：<br>
+@ 如果point是指针，则我们应用内置的箭头运算符，表达式等价于(*point).mem。首先解引用该指针，然后从所得的对象中获取指定的成员。如果point所指的类型没有名为mem的成员，程序会发生错误。<br>
+@ 如果point是定义了operator->的类的一个对象，则我们使用point.operator->()的结果来获取mem。其中如果该结果是一个指针，则执行第一步；如果该结果本身含有重载的operator->()，则重复调用当前步骤。最终，当这一过程结束时程序或者返回了所需的内容，或者返回一些表示程序错误的信息。<br>
+📒 重载的箭头运算符必须返回类的指针或者自定义了箭头运算符的某个类的对象。<br>
+❓ 定义一个类令其含有指向StrBlobPtr对象的指针，为这个类定义重载的箭头运算符。<br>
+```cpp
+class StrBlobPtr;
+class StrBlobPtr_pointer{
+  public:
+  StrBlobPtr_pointer() = default;
+  StrBlobPtr_pointer(StrBlobPtr* p):pointer(p){}
+  StrBlobPtr& operator*();
+  StrBlobPtr* operator->();
+  private:
+  StrBlobPtr* pointer = nullptr;
+}
+```
+### 函数调用运算符
+如果类重载了函数调用运算符，则我们可以像使用函数一样使用该类的对象。因为这样的类同时也能存储状态，所以与普通函数相比它们更加灵活。<br>
+举个🌰 ：
+struct absInt
