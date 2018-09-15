@@ -302,7 +302,7 @@ StrBlobPtr& StrBlobPtr::operator++(){
 ```
 #### 区分前置和后置运算符
 要想同时定义前置和后置运算符，必须首先解决一个问题，即普通的重载形式无法区分这两种情况。前置和后置版本使用的是同一个符号，意味着其重载版本所用的名字将是相同的，并且运算对象的数量和类型也相同。<br>
-为了解决这个问题，后置版本接受一个**额外的（不被使用）int类型的形参。**当我们使用后置运算符时，编译器为这个形参提供一个值为0的实参。尽管从语法上来说后置函数可以使用这个额外的形参，但是在实际过程中通常不会这么做。<br>
+为了解决这个问题，后置版本接受一个 **额外的（不被使用）int类型的形参。** 当我们使用后置运算符时，编译器为这个形参提供一个值为0的实参。尽管从语法上来说后置函数可以使用这个额外的形参，但是在实际过程中通常不会这么做。<br>
 这个形参的唯一作用就是区分前置版本和后置版本的函数，而不是真的要在实现后置版本时参与运算。<br>
 ```cpp
 class StrBlobPtr{
@@ -395,4 +395,95 @@ class StrBlobPtr_pointer{
 ### 函数调用运算符
 如果类重载了函数调用运算符，则我们可以像使用函数一样使用该类的对象。因为这样的类同时也能存储状态，所以与普通函数相比它们更加灵活。<br>
 举个🌰 ：
-struct absInt
+```cpp
+struct absInt{
+  int operator()(int val) const{
+    return val < 0 ? -val : val;
+  }
+};
+```
+这个类只定义了一种操作：函数调用运算符，它负责接受一个int类型的实参，然后返回该实参的绝对值。<br>
+我们使用调用运算符的方式是另absInt对象作用于一个实参列表，这一过程看起来非常像调用函数的过程。<br>
+```cpp
+int i = -42;
+absInt absObj;
+int ui = absObj(i); 
+// 将i传递给absObj.operator()
+```
+即使absObj只是一个对象而非函数，我们也能“调用”该对象。调用对象实际上是在运行重载的调用运算符。在此例中，该运算符接受一个int值并返回其绝对值。<br>
+📒 函数调用运算符必须是成员函数。一个类可以定义多个不同版本的调用运算符，相互之间应该在参数数量或类型上有所区别。<br>
+如果类定义了调用运算符，则该类的对象称作 **函数对象** 。因为可以调用这种对象，所以我们说这些对象的“行为”像函数一样。<br>
+#### 含有状态的函数对象类
+函数对象类通常含有一些数据成员，这些成员被用于定制调用运算符中的操作。<br>
+🌰 ：
+```cpp
+class PrintString{
+  public:
+      PrintString(ostream &o = cout, char c = ' '):os(o),sep(c){}
+      void operator() (const string &s) const { os << s << sep;}
+  private:
+      ostream &os ; // 用于写入的目的流
+      char sep; // 用于将不同输入隔开的字符
+}
+```
+上述类有一个构造函数，它接受一个输出流的引用以及一个用于分隔的字符，这两个形参的默认实参分别是cout和空格。之后的函数调用运算符使用这些成员协助其打印给定的string。<br>
+```cpp
+PrintString printer; // 使用默认值，打印到cout
+printer(s);   // 在cout中打印s，后面跟一个空格
+PrinterString errors(cerr,'\n'); 
+errors(s); // 在cerr中打印s，后面跟一个换行符
+```
+函数对象常常作为泛型算法的实参。<br>
+```cpp
+for_each(vs.begin(),vs.end(),PrintString(cerr,'\n'));
+```
+❓ 一个重载的函数调用运算符应该接受几个运算对象？<br>
+一个重载的函数调用运算符接受的运算对象应该和该运算符拥有的操作数一样多。<br>
+```cpp
+int operator()(bool b,int ia, int ib){
+  return b?ia:ib;
+}
+```
+❓编写一个类似于 PrintString 的类，令其从 istream 中读取一行输入，然后返回一个表示我们所读内容的string。如果读取失败，返回空string。<br>
+```cpp
+#include <iostream>
+#include <string>
+
+class GetInput {
+  public:
+     GetInput(std::istream &i = std::cin):is(i){}
+     std::string operator()() const {
+         std::string str;
+         std::getline(is,str);
+         return is?str:(std::string());
+     }
+  private:
+     std::istream &is;
+};
+
+int main(){
+  GetInput getInput;
+  std::vector<std::string> vec;
+  for(std::string tmp;!(tmp = getInput()).empty();) vec.push_back(tmp);
+  for(const auto &str:vec) std::cout<< str << " ";
+  std::cout << std::endl;
+  return 0;
+}
+```
+#### lambda是函数对象
+当我们编写一个lambda后，编译器将该表达式翻译称一个未命名类的未命名对象。在lambda表达式产生的类中含有一个重载的函数调用运算符。举个🌰 吧：
+```cpp
+    // 根据单词的长度对其进行排序，对于长度相同的单词按照字母表顺序排序。
+    stable_sort(words.begin(),words.end(),[] (const string &a, cosnt string &b){return a.size() < b.size();});
+```
+其行为类似下面这个未命名的对象
+```cpp
+class ShorterString{
+  public:
+  bool operator() (const string &s1, const string &s2) const {
+    return s1.size() < s2.size();
+  }
+};
+```
+产生的类只有一个函数调用运算符成员，它负责接受两个string并比较它们的长度，它的形参列表和函数体与lambda表达式完全一样。<br>
+
