@@ -471,10 +471,10 @@ int main(){
 }
 ```
 #### lambda是函数对象
-当我们编写一个lambda后，编译器将该表达式翻译称一个未命名类的未命名对象。在lambda表达式产生的类中含有一个重载的函数调用运算符。举个🌰 吧：
+当我们编写一个lambda后，编译器将该表达式翻译成一个未命名类的未命名对象。在lambda表达式产生的类中含有一个重载的函数调用运算符。举个🌰 吧：
 ```cpp
-    // 根据单词的长度对其进行排序，对于长度相同的单词按照字母表顺序排序。
-    stable_sort(words.begin(),words.end(),[] (const string &a, cosnt string &b){return a.size() < b.size();});
+// 根据单词的长度对其进行排序，对于长度相同的单词按照字母表顺序排序。
+stable_sort(words.begin(),words.end(),[] (const string &a, cosnt string &b){return a.size() < b.size();});
 ```
 其行为类似下面这个未命名的对象
 ```cpp
@@ -486,4 +486,45 @@ class ShorterString{
 };
 ```
 产生的类只有一个函数调用运算符成员，它负责接受两个string并比较它们的长度，它的形参列表和函数体与lambda表达式完全一样。<br>
-
+默认情况下lambda不能改变它捕获的变量。因此在默认情况下，由lambda产生的类当中的函数调用运算符是一个const成员函数。如果lambda被声明为可变的，则调用运算符就不是const的了。<br>
+用这个类替代lambda表达式后，我们可以重写并重新调用stable_sort:
+```cpp
+stable_sort(words.begin(),words.end(),ShorterString());
+```
+第三个实参是新构建的ShorterString对象，当stable_sort内部的代码每次比较两个string时就会“调用”这一对象，此时该对象将调用运算符的函数体，判断第一个string的大小小于第二个时返回true。<br>
+#### 表示lambda及相应捕获行为的类
+如我们所知，当一个lambda表达式通过引用捕获变量时，将由程序负责确保lambda执行时引用所引的对象确实存在。因此，编译器可以直接使用该引用而无须在lambda产生的类中将其存储。<br>
+相反，通过值捕获的变量被拷贝到lambda中。因此，这种lambda产生的类必须为每个值捕获的变量建立对应的数据成员，同时创建构造函数，令其使用捕获的变量的值来初始化数据成员。<br>
+举个🌰 ：
+```cpp
+// 获得第一个指向满足条件元素的迭代器，该元素满足size() is >= sz;
+auto wc = find_if(words.begin(), words.end(),[sz] (const string &a){ return a.size() >= sz;});
+```
+该lambda表达式产生的类将形如：
+```cpp
+class SizeComp{
+  SizeComp(size_t n):sz(n){} // 该形参对应捕获的变量
+  // 该调用运算符的返回类型、形参和函数体都与lambda一致。
+  bool operator()(const string &s) const{ return s.size() >= sz; }
+  private:
+  size_t sz;
+};
+```
+和我们的ShorterString类不同，上面这个类含有一个数据成员以及一个用于初始化该成员的构造函数。这个合成的类不含有默认构造函数，因此要想使用这个类必须提供一个实参。
+```cpp
+// 获得第一个指向满足条件元素的迭代器，该元素满足size() is >= sz
+auto wc = find_if(words.begin(), words.end(), SizeComp(sz));
+```
+lambda表达式产生的类不含默认构造函数、赋值运算符及默认析构函数； 它是否含有默认的拷贝/移动构造函数则通常要视捕获的数据成员类型而定。<br>
+### 标准库定义的函数对象
+标准库定义了一组表示算术运算符、关系运算符和逻辑运算符的类，每个类分别定义了一个执行命名操作的调用运算符。例如，plus类定义了一个函数调用运算符用于对一对运算对象执行+的操作；modulus类定义了一个调用运算符执行二元的%操作;equal_to 类执行==，等等。<br>
+这些类都被定义成模版的形式，我们可以为其指定具体的应用类型。这里的类型即调用运算符的形参类型。举个🌰 ： `plus<string>`令string加法运算符作用于string对象。`plus<int>` 的运算对象是int; `plus<Sales_Data>`对Sales_Data对象执行加法运算。<br>
+```cpp
+    plus<int> intAdd;
+    negate<int> intNegate;
+    int sum = intAdd(10,20);
+    sum = intNegate(intAdd(10,20));
+    // 使用intAdd::operator(int,int)
+    sum = intAdd(10, intNegate(10));
+```
+9.16🌀 台风山竹，很猛，在家煲剧一整天，只做了一点笔记，很内疚。
