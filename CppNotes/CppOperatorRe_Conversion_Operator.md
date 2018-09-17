@@ -532,9 +532,9 @@ lambda表达式产生的类不含默认构造函数、赋值运算符及默认�
 9.17🌀 走了
 
 ##### 标准库函数对象
-**算术：**plus<Type>,minus...,multiplies...,divides...,modulus...,negate...<br>
-**关系：**equal_to...,not_equal_to...,greater...,greater_equal...,less...,less_equal...<br>
-**逻辑：**logical_and...,logical_or...,logical_not...<br>
+**算术：** plus<Type>,minus...,multiplies...,divides...,modulus...,negate...<br>
+**关系：** equal_to...,not_equal_to...,greater...,greater_equal...,less...,less_equal...<br>
+**逻辑：** logical_and...,logical_or...,logical_not...<br>
 #### 在算法中使用标准库函数对象
 表示运算符的函数对象类常用来替换算法中的默认运算符。例如，如果svec是一个`vector<string>`
 ```cpp
@@ -640,3 +640,147 @@ binops.insert({"+",[] (int a,int b){return add(a,b);}});
 ### 重载、类型转换与运算符
 转换构造函数和类型转换运算符共同定义了 **类类型转换(class-type conversions)**，这样的转换有时也被称作 **用户定义的类型转换(user-defined conversion)**
 #### 类型转换运算符
+**类型转换运算符（conversion operator）**是类的一种特殊成员函数，它负责将一个类类型的值转换成其他类型。类型转换函数的一般形式如下：
+```cpp
+operator type() const;
+```
+其中type表示某种类型。类型转换运算符可以面向任意类型（除了void外）进行定义，**只要该类型能作为函数的返回类型**。因此，我们不允许转换成数组或者函数类型，但允许转换成指针（包括数组指针及函数指针）或者引用类型。<br>
+类型转换运算符既没有显式的返回类型，也没有形参，而且必须定义成类的成员函数。类型转换运算符通常不应该改变待变换对象的内容，因此，类型转换运算符一般被定义成const成员。<br>
+##### 定义含有类型转换运算符的类
+```cpp
+class SmallInt{
+  public:
+  SmallInt(int i = 0):val(i){
+    if(i<0||i>255)
+        throw std::out_of_range("Bad SmallInt value");
+  }
+  operator int() const { return val; }
+  private:
+      std::size_t val;
+}
+```
+SmallInt类既定义了向类类型的转换，也定义了从类类型向其他类型的转换。其中，构造函数将算术类型的值转换成SmallInt对象，而类型转换运算符将SmallInt对象转换成int：
+```cpp
+    SmallInt si;
+    si = 4; // 首先允许将4隐式地转换成SmallInt，然后调用SmallInt::operator=
+    si+3; // 首先将si隐式地转换成int，然后执行整数的加法
+```
+尽管编译器一次只能执行一个用户定义的类型转换，但是隐式的用户定义类型转换可以置于一个标准（内置）类型转换之前或之后，并与其一起使用。 因此我们可以将任何算术类型传递给SmallInt的构造函数。类似的，我们也能使用类型转换运算符将一个SmallInt对象转换成int，然后再将所得的int转换成任何其他算术类型：
+```cpp
+SmallInt si = 3.14; // 调用SmallInt(int) 构造函数
+// SmallInt的类型转换运算符将si转换成int
+si+3.14; // 内置类型转换将所得的int继续转换成double
+```
+因为类型转换运算符是隐式执行的，所以无法给这些函数传递实参，当然也就不能在类型转换运算符的定义中使用任何形参。同时，尽管类型转换函数不负责指定返回类型，但实际上，每个类型转换函数都会返回一个对应类型的值。<br>
+```cpp
+class SmallInt;
+operator int(SmallInt&); // ❌ 不是成员函数
+class SmallInt{
+  public:
+  int operator int() const; // ❌ 指定了返回类型
+  operator int(int = 0) const; // ❌ 参数列表不为空
+  operator int*() const { return 42;} // ❌ 42不是一个指针
+}
+```
+❕ **避免过多使用类型转换函数**<br>
+如果在类类型和转换类型之间不存在明显的映射关系，则这样的类型转换可能具有误导性。<br>
+##### 类型转换运算符可能产生意外结果
+在实践中，类很少提供类型转换运算符。<br>
+```cpp
+int i = 42;
+cin << i; // 被当成左移运算符，转换成bool值（1或0）最终被左移42个位置。
+```
+##### 显式的类型转换运算符
+为了防止这样的异常情况发生，C++11新标准引入了 **显式的类型转换运算符(explicit conversion operator)**<br>
+```cpp
+class SmallInt{
+  public:
+  // 编译器不会自动执行这一类型转换
+  explicit operator int() const{ return val; }
+  // 其他成员与之前的版本一致
+}
+```
+```cpp
+static_cast<int> (si)+3; // ☑️ 显式地请求类型转换
+```
+该规定有一个例外，即如果表达式被用作条件，则编译器会将显式的类型转换自动应用于它。<br>
+@ if、while以及do语句的条件部分<br>
+@ for 语句头的条件表达式<br>
+@ 逻辑非运算符(!)、（||）、（&&）的运算对象<br>
+@ 条件运算符(?:)的条件表达式<br>
+##### 转换为bool
+⚠️ 向bool的类型转换通常用在条件部分，因此operator bool一般定义成explicit的。<br>
+```cpp
+explicit operator string() const { return ... // string; }
+explicit operator double() const { return ... // double; }
+```
+❓ 为Date类定义一个bool的类型转换运算符<br>
+```cpp
+explicit operator bool() { return (year<4000)?true:false;}
+```
+#### 避免有二义性的类型转换
+如果类中包含一个或多个类型转换，则必须确保在类类型和目标类型之间只存在唯一一种转换方式。<br>
+两种情况下会产生多重转换路径。a. 两个类提佛那个相同的类型转换。例如：A类定义了一个接受B类对象的转换构造函数，同时B类定义了一个转换目标是A类的类型转换运算符时。<br>
+b. 类定义了多个转换规则，而这些转换涉及的类型本身可以通过其他类型转换联系在一起。<br>
+⚠️ 通常情况下，不要为类定义相同的类型转换，也不要在类中定义两个及以上转换源或转换目标是算术类型的转换。<br>
+##### 实参匹配和相同的类型转换
+B -> A B换成A
+```cpp
+struct B;
+struct A{
+  A() = default;
+  A(const B&); // 把一个B转换成A
+  ...
+};
+struct B{
+  operator A() const; // 也是把一个B转换成A
+  ...
+};
+A f(const &A);
+B b;
+A a = f(b); // ❌ 二义性 含义是f(B::operator A()) 还是f(A::A(const B&))?
+``` 
+所以呀，要显式地调用类型转换运算符活着转换构造函数：
+```cpp
+A a1 = f(b.operator A()); // ☑️ 使用B的类型转换运算符
+A a2 = f(A(b)); // ☑️ 使用A的构造函数
+```
+⚠️ 我们无法使用强制类型转换来解决二义性问题，因为强制类型转换本身也面临二义性。<br>
+##### 二义性与转换目标为内置类型的多重类型转换
+另外如果类定义了一组类型转换，它们的转换源（或者转换目标）类型本身可以通过其他类型转换联系在一起，则同样会产生二义性的问题。<br>
+🌰 ：类当中定义了多个参数都是算术类型的构造函数，或者转换目标都是算术类型的类型转换运算符。<br>
+当我们使用用户定义的类型转换时，如果转换过程包含标准类型转换，则标准类型转换级别将决定编译器选择最佳匹配的过程。<br>
+📒  **类型转换与运算符**<br>
+@ 不要令两个类执行相同的类型转换<br>
+@ 避免转换目标是内置算术类型的类型转换。<br>
+一言记之日：除了显式地向bool类型的转换外，我们应该尽量避免定义类型转换函数并尽可能地限制那些“显然正确”的非显式构造函数<br>
+##### 重载函数与转换构造函数
+当我们调用重载的函数时，从多个类型转换中进行选择将变得更加复杂。如果两个或多个类型转换都提供了同一种可行匹配，则这些类型转换一样好。<br>
+显式地构造正确的类型从而消除二义性。<br>
+⚠️ 如果在调用重载函数是，我们需要使用构造函数活着强制类型转换来改变实参的类型，则这通常意味着程序的设计存在不足。<br>
+##### 重载函数与用户定义的类型转换
+当调用重载函数时，如果两个（或多个）用户定义的类型转换都提供了可行匹配，则我们认为这些类型转换一样好。<br>
+只有当重载函数能通过同一个类型转换函数得到匹配时，我们才会考虑其中出现的标准类型转换。<br>
+就是说，如果构造函数时可行匹配的，编译器就会产生二义性，需要显式地使用。<br>
+转换的优先级如下：<br>
+精确匹配<br>
+const 转换。<br>
+类型提升<br>
+算术转换<br>
+类类型转换<br>
+### 函数匹配与重载运算符
+重载的运算符也是重载的函数。📒 表达式中运算符的候选函数集既应该包括成员函数，也应该包括非成员函数。<br>
+🌰 
+```cpp
+class SmallInt{
+  friend SmallInt operator+(const SmallInt&, const SmallInt&);
+  public:
+  SmallInt(int = 0); //转换源为int的类型转换
+  operator int() const {return val;} //转换目标为int的类型转换
+  private:
+  std::size_t val;
+}
+```
+⚠️ 如果我们对同一个类既提供了转换目标是算术类型的类型转换，也提供了重载的运算符，则将会遇到重载运算符与内置运算符的二义性问题。<br>
+其实二义性问题，需要在程序设计中要好好思考一下，避免这种调用就行了。<br>
+14章节结束，谢谢观赏。😊 
