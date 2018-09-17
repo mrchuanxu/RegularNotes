@@ -520,11 +520,123 @@ lambda表达式产生的类不含默认构造函数、赋值运算符及默认�
 标准库定义了一组表示算术运算符、关系运算符和逻辑运算符的类，每个类分别定义了一个执行命名操作的调用运算符。例如，plus类定义了一个函数调用运算符用于对一对运算对象执行+的操作；modulus类定义了一个调用运算符执行二元的%操作;equal_to 类执行==，等等。<br>
 这些类都被定义成模版的形式，我们可以为其指定具体的应用类型。这里的类型即调用运算符的形参类型。举个🌰 ： `plus<string>`令string加法运算符作用于string对象。`plus<int>` 的运算对象是int; `plus<Sales_Data>`对Sales_Data对象执行加法运算。<br>
 ```cpp
-    plus<int> intAdd;
-    negate<int> intNegate;
-    int sum = intAdd(10,20);
-    sum = intNegate(intAdd(10,20));
+    plus<int> intAdd; // 可执行int加法的函数对
+    negate<int> intNegate; // 可对int值取反的函数对象
+    int sum = intAdd(10,20);// 等价sum = 30
+    sum = intNegate(intAdd(10,20)); // 等价sum = -30
     // 使用intAdd::operator(int,int)
     sum = intAdd(10, intNegate(10));
+    // 使用intNegate(10) 返回-10，然后将-10 作为第二个参数，所以等价sum = 0；
 ```
-9.16🌀 台风山竹，很猛，在家煲剧一整天，只做了一点笔记，很内疚。
+9.16🌀 台风山竹，很猛，在家煲剧一整天，只做了一点笔记，很惭愧。
+9.17🌀 走了
+
+##### 标准库函数对象
+**算术：**plus<Type>,minus...,multiplies...,divides...,modulus...,negate...<br>
+**关系：**equal_to...,not_equal_to...,greater...,greater_equal...,less...,less_equal...<br>
+**逻辑：**logical_and...,logical_or...,logical_not...<br>
+#### 在算法中使用标准库函数对象
+表示运算符的函数对象类常用来替换算法中的默认运算符。例如，如果svec是一个`vector<string>`
+```cpp
+// 传入一个临时的函数对象用于执行两个string对象的>比较运算
+sort(svec.begin(),svec.end(),greater<string>());
+```
+则上面的语句将按照降序对svec进行排序。第三个实参是`greater<string>`类型的一个未命名的对象，因此当sort比较元素时，不再是使用默认的<运算符，而是调用给定的greater函数对象。该对象负责在string元素之间执行>比较运算。<br>
+特别⚠️ ，标准库规定其函数对象对于指针同样适用。<br>
+曾经介绍过，比较两个无关指针将产生未定义的行为，然而我们可能会希望通过比较指针的内存地址来sort指针的vector。直接这么做将产生未定义的行为，因此我们可以使用一个标准库函数对象来实现该目的：<br>
+```cpp
+vector<string *> nameTable; // 指针的vector
+// ❌ nameTable 中的指针彼此之间没有关系，所以<将产生未定义的行为
+sort(nameTable.begin(),nameTable.end(),[] (string *a, string *b){ return a < b;});
+// ☑️️ 标准库规定指针的less是定义良好的
+sort(nameTable.begin(),nameTable.end(),less<string*>());
+```
+关联容器使用`less<key_type>`对元素排序，因此我们可以定义一个指针的set或者在map中使用指针作为关键值而无须直接声明less。<br>
+❓ 使用标准库函数对象及适配器定义一条表达式，令其a. 统计大于1024的值有多少个  b. 找到第一个不等于pooh的字符串  c. 将所有的值乘以2<br>
+```cpp
+std::count_if(ivec.cbegin(), ivec.cend(),std::bind(std::greater<int>(), _1, 1024));
+std::count_str(ivec.cbegin(),ivec.cend(),std::bind(std::not_equal_to<sting>,_1,"pooh"));
+std::mutiply_int(ivec.begin(),ivec.end(),std::bind(std::multiplies<int>,_1.2));
+```
+❓ 适用标准库函数对象判断一个给定的int值是否能被int容器中的所有元素整除。<br>
+```cpp
+std::any_of(ivec.begin(),ivec.end(),[&] (int i){ return 0 == std::modulus<int> mod(input,i);});
+```
+### 可调用对象与function
+C++ 语言中有几种可调用的对象：函数、函数指针、lambda表达式、bind创建的对象以及重载了函数调用运算符的类。<br>
+和其他对象一样，可调用对象也有类型。例如，每个lambda有它自己唯一的（未命名）类类型；函数以及函数指针的类型则由其返回值类型和实参类型决定，等等。<br>
+然而，两个不同类型的可调用对象却可能共享同一种 **调用形式（call signature）**。调用形式指明了调用返回的类型以及传递给调用的实参类型。一种调用形式对应一个函数类型
+```cpp
+int(int,int); // 是一个函数类型，它接受两个int、返回一个int。
+```
+##### 不同类型可能具有相同的调用形式
+对于几个可调用对象共享同一种调用形式的情况，有时，我们会希望把它们看成具有相同的类型。
+```cpp
+// 普通函数
+int add(int i, int j) {return i+j;}
+// lambda,其产生一个未命名的函数对象类
+auto mod = [] (int i,int j){ return i%j;};
+
+// 函数对象类
+struct divide{
+  int operator()(int denominator, int divisor){
+    return denominator / divisor;
+  }
+};
+```
+上面这些可调用对象分别对其参数执行了不同的算术运算，尽管它们的类型各不相同，但是共享同一种调用形式：`int(int,int)`<br>
+举个map的🌰 <br>
+假设我们所有函数都相互独立，并且只处理关于int的二元运算，则map可以定义成如下的形式。<br>
+```cpp
+map<string,int(*)(int,int)> binops;
+// 构建从运算符到函数指针的映射关系，其中函数接受两个int、返回一个int
+```
+可以按照下面的形式将add的指针添加到binops中
+```cpp
+binops.insert({"+",add}); // ☑️ add是一个指向正确类型函数的指针。
+```
+但是我们不能将mod或者divide存入binops：
+```cpp
+binops.insert({"%",mod}); // ❌ mod不是一个函数指针。
+```
+问题在于mod是个lambda表达式，而每个lambda有它自己的类类型，该类型与存储在binops中的值的类型不匹配。<br>
+##### 标准库function类型
+我们可以适用一个名为function的新的标准库类型解决上述问题，function定义在functional头文件中。<br>
+function操作：<br>
+function<T> f; // f是一个用于存储可调用对象的空function，这些可调用对象的调用形式应该与函数类型T相同（即T是retType(args)）<br>
+function<T> f(nullptr); // 显式地构造一个空function<br>
+function<T> f(obj); // 在f中存储可调用对象obj的副本<br>
+f // 将f作为条件：当f含有一个可调用对象时为真；否则为假。<br>
+f(args) // 调用f中的对象，参数是args<br>
+**定义为function<T>的成员的类型**<br>
+result_type // 该function类型的可调用对象返回的类型
+argument_type // 当T有一个或两个实参时定义的类型。如果T只有一个实参，则argument_type是该类型的同义词；如果T有两个实参，则 **first_argument_type**和 **second_argument_type**分别代表两个实参的类型。<br>
+function是一个模版，和我们使用过的其他模版一样，当创建一个具体的function类型时我们必须提供额外的信息。在此例中，所谓额外的信息是指该function类型能够表示的对象的调用形式。参考其他模版，我们在一对尖括号内指定类型。<br>
+```cpp
+function<int(int,int)>  // 声明了一个function类型，它可以接受两个int、返回一个int的可调用对象。因此，我们可以用这个新声明的类型表示任意一种桌面计算器用到的类型；
+```
+```cpp
+function<int(int,int)> f1 = add; // 函数指针
+function<int(int,int)> f2 = divide(); // 函数对象类的对象
+function<int(int,int)> f3 = [] (int i,int j){ return i*j;};
+cout<< f1(9,8) << endl;
+```
+重新定义map
+```cpp
+map<string, function<int(int,int)>> binops;
+```
+##### 重载的函数与function
+我们不能（直接）将重载函数的名字存入function类型的对象中：
+```cpp
+int add(int i,int j) {return i+j;}
+Sales_data add(const Sales_data&,const Sales__data&);
+map<string,function<int(int,int)>> binops;
+// 先定义一个指针类型的版本
+int (*fp)(int,int) = add; // 指针所指的add是接受两个int的版本
+binops.insert({“+”,add})；
+// 或者使用lambda
+binops.insert({"+",[] (int a,int b){return add(a,b);}});
+```
+### 重载、类型转换与运算符
+转换构造函数和类型转换运算符共同定义了 **类类型转换(class-type conversions)**，这样的转换有时也被称作 **用户定义的类型转换(user-defined conversion)**
+#### 类型转换运算符
