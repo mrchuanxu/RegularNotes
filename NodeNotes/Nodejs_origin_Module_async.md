@@ -726,5 +726,59 @@ Promise.prototype.then = function(fulfilledHandler,errorHandler,progressHandler)
 先看一张图<br>
 ![中间件通过队列形成一个处理流](./img/nodejs_middle.png)<br>
 中间件机制使得在处理网络请求时，可以像面向切面编程一样进行过滤、验证、日志等功能，而不与具体业务逻辑产生关联，以致产生耦合。<br>
+下面我们来看Connect的核心实现
+```js
+function createServer(){
+  fucntion app(req,res){ app.handle(req,res); }
+  utils.merge(app,proto);
+  utils.merge(app,EventEmitter.prototype);
+  app.route = '/';
+  app.stack = [];
+  for(var i = 0; i<arguments.length; ++i){
+    app.use(arguments[i]);
+  }
+  return app;
+};
+```
+这段代码通过如下代码创建了HTTP服务器的request是件处理函数：
+```js
+function app(req,res){app.handle(req,res);}
+```
+但真正的核心代码是`app.stack = [];`。stack属性是这个服务器内部维护的中间件队列。通过调用use()方法我们可以将中间件放进队列中。<br>
+```js
+app.use = function(route,fn){
+  // some code
+  this.stack.push({route:route,handle:fn});
+  return this;
+};
+```
+此时就建好处理模型了。接下来，结合Node原生http模块实现监听即可。监听函数的实现如下：
+```js
+app.listen = function(){
+  var server = http.createServer(this);
+  return server.listen.apply(server,arguments);
+};
+```
+最终回到app.handle()方法，每一个监听到的网络请求都将从这里开始处理。
+```js
+app.handle = function(req,res,out){
+  // some code;
+  next();
+}
+```
+原始的next()方法较为复杂，下面是简化的内容，原理十分简单：取出队列中的中间件并执行，同时传入当前方法以实现递归调用，达到持续触发的目的：
+```js
+function next(err){
+  // ...
+  // next callback
+  layer = stack[index++];
+  layer.handle(req,res,next);
+}
+```
+在Connect中，尾触发十分适合处理网络请求的场景。将复杂的处理逻辑拆解为简洁、单一的处理单元，逐层次地处理请求对象和响应对象。<br>
+##### 2.async
+async长期占据NPM依赖榜前三。async模块提供了20多个方法用于处理异步的各种协作模式。<br>
+@ **异步的串行执行**<br>
+async 解决恶魔金字塔<br>
 
 
