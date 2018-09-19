@@ -868,3 +868,29 @@ fs.readFile('b.txt','utf-8',proxy.done('data'));
 EventProxy 虽然基于是件发布/订阅模式设计，但也用到了与asyne相同的原理，通过特殊的回调函数来隐含返回值的处理。<br>
 所不同的是，在async的框架模式下，这个回调函数由async封装后传递出来，而EventProxy则通过done()和fail()方法来生成新的回调函数。<br>
 @ **异步调用的依赖处理**<br>
+series() 适合无依赖的异步串行执行，但当前一个的结果是最后调用的输入时，series()方法就无法满足需求了。所幸，这种典型场景的需求，async提供了waterfall()来满足。
+```js
+async.waterfall([
+  function(callback){
+    fa.readFile('a.txt','utf-8',function(err,content){
+      callback(err,content);
+    });
+  },
+  function(arg1,callback){
+    // arg1 => b.txt
+     fa.readFile(arg1,'utf-8',function(err,content){
+      callback(err,content);
+    });
+  },
+  function(arg1,callback){
+    // arg1 => c.txt
+     fa.readFile(arg1,'utf-8',function(err,content){
+      callback(err,content);
+    });
+  }
+],function(err,result){
+  // result=> d.txt
+})
+```
+@ **自动依赖处理**<br>
+
