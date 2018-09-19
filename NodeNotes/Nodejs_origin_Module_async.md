@@ -780,5 +780,91 @@ function next(err){
 async长期占据NPM依赖榜前三。async模块提供了20多个方法用于处理异步的各种协作模式。<br>
 @ **异步的串行执行**<br>
 async 解决恶魔金字塔<br>
-
-
+async提供了series()方法来实现一组人物的串行执行。
+```js
+async.series([function(callback){
+  fs.readFile('a.txt','utf-8',callback);
+},
+function(callback){
+  fs.readFile('b.txt','utf-8',callback);
+}],function(err,results){
+  // results => [a.txt,b.txt]
+});
+```
+等价于
+```js
+fs.readFile('a.txt','utf-8',function(err,content){
+  if(err){
+    return callback(err);
+  }
+  fs.readFile('b.txt','utf-8',function(err,data){
+    if(err){
+      return callback(err);
+    }
+    callback(null,[content,data]);
+  })
+})
+```
+可以返现，series()方法中传入的函数callback()并非由使用者指定。事实上，此处的回调函数由async通过高阶函数的方式注入，这里隐含了特殊的逻辑。<br>
+每个callback()执行时会将结果保存起来，然后执行下一个调用，直到结束所有调用。最终的回调函数执行时，队列里的异步调用保存的结果以数组的方式传入。这里的异常处理规则是一旦出现异常，就结束所有调用，并将异常传递给最终回调函数的第一个参数。<br>
+@ **异步的并行执行**<br>
+当我们需要通过并行来提升性能时，async提供了parallel()方法，用以并行执行一些异步操作。
+```js
+async.parallel([
+  function(callback){
+    fs.readFile('a.txt','utf-8',callback);
+  },
+  function(callback){
+    fs.readFile('b.txt','utf-8',callback);
+  }
+],function(err,results){
+  // results => [a.txt,b.txt]
+});
+```
+等价于
+```js
+var counter = 2;
+var results = [];
+var done = function(index,value){
+  results[index] = value;
+  counter--;
+  if(counter == 0){
+    callback(null,results);
+  }
+};
+// 只传递第一个异常
+var hasErr = false;
+var fail = function(err){
+  if(!hasErr){
+    hasErr = true;
+    callback(err);
+  }
+};
+fs.readFile('a.txt','utf-8',function(err,content){
+  if(err){
+    return fail(err);
+  }
+  done(0,content);
+});
+fs.readFile('b.txt','utf-8',function(err,data){
+  if(err){
+    return fail(err);
+  }
+  done(1,data);
+});
+```
+同样，通过async编写的代码既没有深度的嵌套，也没有复杂的状态判断，它的诀窍依然来自于注入的回调函数。parallel()方法对于异常的判断依然是一旦某个异步调用产生异常就会作为第一个参数传入给最终的回调函数。只有所有的异步调用都正常完成时，才会将结果以数组的方式传入。<br>
+EventProxy的方案
+```js
+var EventProxy = require('eventproxy');
+var proxy = new EventProxy();
+proxy.all('content','data',function(content,data){
+  callback(null,[content,data]);
+})
+proxy.fail(callback);
+fs.readFile('a.txt','utf-8',proxy.done('content'));
+fs.readFile('b.txt','utf-8',proxy.done('data'));
+```
+EventProxy 虽然基于是件发布/订阅模式设计，但也用到了与asyne相同的原理，通过特殊的回调函数来隐含返回值的处理。<br>
+所不同的是，在async的框架模式下，这个回调函数由async封装后传递出来，而EventProxy则通过done()和fail()方法来生成新的回调函数。<br>
+@ **异步调用的依赖处理**<br>
