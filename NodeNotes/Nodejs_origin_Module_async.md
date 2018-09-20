@@ -893,4 +893,41 @@ async.waterfall([
 })
 ```
 @ **自动依赖处理**<br>
-
+async提供了一个强大的方法auto()实现复杂业务处理。异步同步自判断<br>
+auto()方法根据依赖关系自动分析，以最佳的顺序执行。<br>
+`async.auto(deps)`
+```js
+var deps = {
+  function(){
+  callback
+  },
+  function(){
+    callback
+  },
+  ...
+}
+```
+转换到EventProxy的实现<br>
+```js
+proxy.asap('sss',function(){
+  proxy.emit('ss');
+}).on(...)....all();
+```
+@ **小结**<br>
+本节主要介绍async的几种常见用法。此外，async还提供了forEach、map等类ECMAScript中数组的方法。<br>
+##### Step
+知名流程控制库Step，比async更轻量。只有一个接口Step。npm install step<br>
+```js
+Step(task1,task2,task3);
+```
+Step接受任意数量的任务，所有任务都将会串行依次执行。<br>
+```js
+Step(
+  function readFile1(){ fs.readFile('a.txt','utf-8',this);},function readFile2(err,content){
+    fs.readFile('b.txt','utf-8',this);
+  },
+  function done(err,content){ console.log(content);}
+);
+```
+Step用到了this关键字，事实上它是Step内部的一个next()方法，将异步调用的结果传递给下一个任务作为参数，并调用执行。<br>
+@ **并行任务执行**<br>
