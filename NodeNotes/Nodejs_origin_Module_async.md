@@ -990,3 +990,49 @@ function(err,results);
 ```
 ##### wind
 wind的前身是jscex，为Js提供了一个monadic扩展，能够显著提高一些常见场景下的异步编程体验。<br>
+异步变成有时需要面临的场景非常特殊，下面用一个冒泡排序来了解wind的特殊之处。<br>
+```js
+var compare = function(x,y){
+  return x-y;
+};
+var swap = function(a,i,j){
+  var t = a[i];
+  a[i] = a[j];
+  a[j] = t;
+};
+var bubbleSort = function(array){
+  for(var i = 0; j < array.length - i - 1; j++){
+    if(compare(array[i],array[j+1])>0){
+      swap(array,j,j+1);
+    }
+  }
+};
+```
+setTimeout()是一个异步方法，在执行后，将立即返回。所以难点在于<br>
+@ 动画执行时无法停止排序算法的执行<br>
+@ 排序算法的继续执行将会启动更多动画<br>
+因此逐步的动画将难以实现，而 **wind**可以解决这个问题，并具有独特的魅力。
+```js
+var compare = function(x,y){
+  return x - y;
+};
+var swapAsync = eval(Wind,compile("async",function(a,i,j){
+  $await(Wind.Async.sleep(20)); // 暂停20毫秒
+  var t = a[i];a[i]=a[j];a[j]=t;
+  paint(a); // 重绘数组
+}))；
+var bubbleSort = eval(Wind.compile("async",function(array){
+  for(var i =0;i<array.length;i++){
+    for(var j =0;i<array.length-i-1;j++){
+      if(compare(array[j],array[j+1])>0){
+        $await(swapAsync(array,j,j+1));
+      }
+    }
+  }
+}));
+```
+这段代码实现了暂停20毫秒、绘制动画、继续排序的效果。这里虽然介入了异步方法，但是并没有如同其他异步流程控制库那样变得异步化，逻辑并没有因为异步被拆分。<br>
+@ eval(Wind.compare("async",function(){}));<br>
+@ $await();<br>
+@ Wind.Async.sleep(20);<br>
+@ **异步任务定义**<br>
