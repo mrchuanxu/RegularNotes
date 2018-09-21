@@ -931,3 +931,62 @@ Step(
 ```
 Step用到了this关键字，事实上它是Step内部的一个next()方法，将异步调用的结果传递给下一个任务作为参数，并调用执行。<br>
 @ **并行任务执行**<br>
+那么，Step如何实现多个异步任务并行执行呢？this具有一个parallel()方法，它告诉Step，需要等所有任务完成时才进行下一个任务
+```js
+Step(
+  function readFile(){
+    fs.readFile('a.txt','utf-8',this.parallel());
+    fs.readFile('b.txt','utf-8',this.parallel());
+  },
+  function done(err,content1,content2){
+    // content1 => a
+    // content2 => b
+    console.log(arguments);
+  }
+);
+```
+使用parallel()的时候需要小心的是，如果异步方法的结果传回的是多个参数，Step将只会取前两个参数。
+```js
+var asyncCall = function(callback){
+  process.nextTick(function(){
+    callback(null,'result1','result2');
+  });
+};
+```
+在调用parallel()时，result2将会被丢弃。<br>
+Step的parallel()方法的原理是每次执行时将内部的计数器加1，然后返回一个回调函数，这个回调函数在异步调用结束时才执行。当回调函数执行时，将计数器减1.当计数器为0时，告知Step所有异步调用结束了，Step会执行下一个方法。<br>
+Step与async相同的是异常处理，一旦有一个异常产生，这个异常会作为下一个方法的第一个参数传入。<br>
+@ **结果分组**<br>
+Step提供的另外一个方法是group()，它类似于parallel()的效果，但是在结果传递上略有不同。
+```js
+Step(
+  function readDir(){
+    fs.readdir(__dirname,this);
+  },
+  function readFiles(err,results){
+    if(err) throw err;
+    // create a new group
+    var group = this.group();
+    results.forEach(function(filename){
+      if(/\.js$/.test(filename)){
+        fs.readFile(__dirname+"/"+filename,'utf-8',group());
+      }
+    });
+  },
+  function showAll(err,files){
+    if(err) throw err;
+    console.dir(files);
+  }
+});
+```
+⚠️ 这里有两次group()的调用。第一次调用是告知Step要并行执行，第二次调用的结果将会生成一个回调函数，而回调函数接受的返回值将会按组存储。<br>
+parallel()传递给下一个任务的结果的形式
+```js
+function(err,result1,result2),...;
+```
+group()则是
+```js
+function(err,results);
+```
+##### wind
+wind的前身是jscex，为Js提供了一个monadic扩展，能够显著提高一些常见场景下的异步编程体验。<br>
