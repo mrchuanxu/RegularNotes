@@ -5,6 +5,7 @@ flexbox布局与方向无关，并不是常规的布局（基于垂直块和给�
 ### 基础知识和术语
 container和items<br>
 ![爸爸和儿子](./img/flexbox_container_items.png)<br>
+* flex container
 #### display
 ```css
 .container{
@@ -44,7 +45,7 @@ CSS列对flex容器没有影响<br>
 }
 ```
 #### justify-content
-这定义了沿主轴对齐。
+这定义了沿主轴对齐。<br>
 ![justify-content](./img/flex-box-justify.png)
 ```css
 .container{
@@ -84,3 +85,278 @@ CSS列对flex容器没有影响<br>
 * space-between：线条均匀分布; 第一行是容器的开头，而最后一行是在最后一行
 * space-around：线条均匀分布，每条线周围的空间相等
 * stretch （默认值）：线条拉伸以占用剩余空间
+
+* flex items
+#### order
+默认情况下，flex按源顺序排列，该order属性控制它们在flex容器中显示顺序。<br>
+![order-flex-items](./img/order-flex-items.png)<br>
+```css
+.item {
+  order: <integer>; /* default is 0 */
+}
+```
+#### flex-grow
+这定义了Flex在必要时增长的能力。它接受一个number值作为一个比例。规定了项目应占用的Flex容器内可用的空间<br>
+![flex-grow-items](./img/flex-grow-items.png)<br>
+```css
+.item {
+  flex-grow: <number>; /* default 0 */
+}
+```
+如果所有的items含有flex-grow，并且设置为1，那么剩下的空间将平均分配给其他所有的子元素。如果有一个子元素的值是2，就会平均分给这个元素两倍之前的空间。<br>
+不支持负数<br>
+####flex-shrink
+定义了flex item的伸缩性。
+```css
+.item {
+  flex-shrink: <number>; /* default 1 */
+}
+```
+不支持负数<br>
+#### flex-basis
+定义元素在分配剩余空间之前的默认大小。
+```css
+.item {
+  flex-basis: <length> | auto; /* default auto */
+}
+```
+![flex-basis](./img/flex-basis-items.png)<br>
+#### flex
+缩写
+```css
+.item {
+  flex: none | [ <'flex-grow'> <'flex-shrink'>? || <'flex-basis'> ]
+}
+```
+#### align-self
+默认每项对齐<br>
+![a;ign-self](./img/align-self-items.png)<br>
+```css
+.item {
+  align-self: auto | flex-start | flex-end | center | baseline | stretch;
+}
+```
+吃几个🌰 吧<br>
+完美居中
+```css
+.parent {
+  display: flex;
+  height: 300px; /* Or whatever */
+}
+
+.child {
+  width: 100px;  /* Or whatever */
+  height: 100px; /* Or whatever */
+  margin: auto;  /* Magic! */
+}
+```
+随窗口移动
+```css
+@import "compass/css3";
+
+.flex-container {
+  padding: 0;
+  margin: 0;
+  list-style: none;
+
+  display: -webkit-box;
+  display: -moz-box;
+  display: -ms-flexbox;
+  display: -webkit-flex;
+  display: flex;
+
+  -webkit-flex-flow: row wrap;  <========
+  justify-content: space-around; <=========
+}
+
+.flex-item {
+  background: tomato;
+  padding: 5px;
+  width: 200px;
+  height: 150px;
+  margin-top: 10px;
+
+  line-height: 150px;
+  color: white;
+  font-weight: bold;
+  font-size: 3em;
+  text-align: center;
+}
+```
+```html
+<div>
+<ul class="flex-container">
+  <li class="flex-item">1</li>
+  <li class="flex-item">2</li>
+  <li class="flex-item">3</li>
+  <li class="flex-item">4</li>
+  <li class="flex-item">5</li>
+  <li class="flex-item">6</li>
+</ul></div>
+```
+网站顶部做一个右对齐导航，但是又想在小型屏幕单柱控制。
+```css
+@import "compass/css3";
+
+.navigation {
+  list-style: none;
+  margin: 0; 
+  
+  background: deepskyblue;
+  
+  display: -webkit-box;
+  display: -moz-box;
+  display: -ms-flexbox;
+  display: -webkit-flex;
+  display: flex;
+  
+  -webkit-flex-flow: row wrap; <==================
+  justify-content: flex-end; <===================
+}
+
+.navigation a {
+  text-decoration: none;
+  display: block;
+  padding: 1em;
+  color: white;
+}
+
+.navigation a:hover {
+  background: darken(deepskyblue, 2%);
+}
+
+@media all and (max-width: 800px) {
+  .navigation {
+    justify-content: space-around; <===========小屏幕
+  }
+}
+
+@media all and (max-width: 600px) {
+  .navigation {
+    -webkit-flex-flow: column wrap; <========== 小屏幕
+    flex-flow: column wrap; <=========== 小屏幕
+    padding: 0;
+  }
+  
+  .navigation a { 
+    text-align: center; 
+    padding: 10px;
+    border-top: 1px solid rgba(255,255,255,0.3); 
+    border-bottom: 1px solid rgba(0,0,0,0.1); 
+  }
+
+  
+  .navigation li:last-of-type a {
+    border-bottom: none;
+  }
+}
+```
+```html
+<ul class="navigation">
+  <li><a href="#">Home</a></li>
+  <li><a href="#">About</a></li>
+  <li><a href="#">Products</a></li>
+  <li><a href="#">Contact</a></li>
+</ul>
+```
+布局自定义
+```css
+.wrapper {
+  display: flex;  
+  flex-flow: row wrap;
+  font-weight: bold;
+  text-align: center;
+}
+
+.wrapper > * {
+  padding: 10px;
+  flex: 1 100%;
+}
+
+.header {
+  background: tomato;
+}
+
+.footer {
+  background: lightgreen;
+}
+
+.main {
+  text-align: left;
+  background: deepskyblue;
+}
+
+.aside-1 {
+  background: gold;
+}
+
+.aside-2 {
+  background: hotpink;
+}
+
+@media all and (min-width: 600px) {
+  .aside { flex: 1 auto; }
+}
+
+@media all and (min-width: 800px) {
+  .main    { flex: 3 0px; }
+  .aside-1 { order: 1; } 
+  .main    { order: 2; }
+  .aside-2 { order: 3; }
+  .footer  { order: 4; }
+}
+
+body {
+  padding: 2em; 
+}
+```
+```html
+<div class="wrapper">
+  <header class="header">Header</header>
+  <article class="main">
+    <p>Pellentesque habitant morbi tristique senectus et netus et malesuada fames ac turpis egestas. Vestibulum tortor quam, feugiat vitae, ultricies eget, tempor sit amet, ante. Donec eu libero sit amet quam egestas semper. Aenean ultricies mi vitae est. Mauris placerat eleifend leo.</p>  
+  </article>
+  <aside class="aside aside-1">Aside 1</aside>
+  <aside class="aside aside-2">Aside 2</aside>
+  <footer class="footer">Footer</footer>
+</div>
+```
+效果
+![shrink](./img/shrink.png)
+![starctch](./img/flex-stractch.png)
+## 前缀flexbox
+适应供应商的变化
+```css
+@mixin flexbox() {
+  display: -webkit-box;
+  display: -moz-box;
+  display: -ms-flexbox;
+  display: -webkit-flex;
+  display: flex;
+}
+
+@mixin flex($values) {
+  -webkit-box-flex: $values;
+  -moz-box-flex:  $values;
+  -webkit-flex:  $values;
+  -ms-flex:  $values;
+  flex:  $values;
+}
+
+@mixin order($val) {
+  -webkit-box-ordinal-group: $val;  
+  -moz-box-ordinal-group: $val;     
+  -ms-flex-order: $val;     
+  -webkit-order: $val;  
+  order: $val;
+}
+
+.wrapper {
+  @include flexbox();
+}
+
+.item {
+  @include flex(1 200px);
+  @include order(2);
+}
+```
