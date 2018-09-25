@@ -1124,3 +1124,181 @@ var readFileAsync = Wind.Async.Binding.fromStandard(fs.readFile);
 5. 流程控制小结<br>
 事件发布/订阅模式相对算是一种较为原始的方式，Promise/Deferred模式贡献了一个非常不错的异步任务模型的抽象。而上述的这些异步流程控制方案与Promise/Deferred模式的思路不同，Promise/Deferred的重头在于封装异步的调用部分，流程控制库则显得没有模式，将处理的重点放置在回调函数的注入上。从自由度来讲，async,Step这些流程控制要相对灵活。EventProxy库主要借鉴事件发布/订阅模式和流程控制库通过高阶函数生成回调函数的方式实现。<br>
 ### 异步并发控制
+在陆续介绍的各种异步编程方法里，解决的问题无外乎保持异步的性能优势，提升编程体验，但是这里有一个过犹不及的案例。<br>
+```js
+for(var i = 0,i<100;i++){
+  async();
+}
+```
+这里利用异步发起了并行调用，如果并发量过大，下层服务器将吃不消。如果是对文件系统进行大量并发调用，操作系统的文件描述符数量将会被瞬间用光，并抛出错误：
+```js
+Error:EMFILE,too many open files
+```
+可看出，异步I/O的显著差距：同步I/O因为每个I/O都是彼此阻塞，在循环体中，总是一个接着一个调用，不会出现耗用文件描述符太多的情况，同时性能也是低下的；对于异步I/O，虽然并发容易实现，需要控制。尽管是要压榨底层系统的性能，但还是需要给予一定的过载保护，以防止过犹不及。<br>
+#### bagpipe的解决方案
+对既有的异步API添加过载保护，写出bagpipe模块<br>
+* 通过一个队列来控制并发量。
+* 如果当前活跃（指调用发起但未执行回调）的异步调用量小于限定值，从队列中取出执行。
+* 如果活跃调用达到限定值，调用暂时存放在队列中。
+* 每个异步调用结束时，从队列中取出新的异步调用执行。
+bagpipe的API主要暴露了一个push()方法和full事件
+```js
+var Bagpipe = require('bagpipe');
+// 设定最大并发数为10
+var bagpipe = new Bagpipe(10);
+for(var i = 0; i<100; i++){
+  bagpipe.push(async,function(){
+    // 异步回调执行
+  });
+}
+bagpipe.on('full',function(length){
+  console.warn('length:',length);
+});
+```
+这里的实现细节类似于前文的smooth()。push()方法依然是通过函数变换的方式实现，假设第一个参数是方法，最后一个参数是回调函数，其余为其他参数
+```js
+/**
+* 推入方法，参数。最后一个参数为回调函数
+* @param{Function} menthod
+* @param{Mix} args 参数列表，最后一个参数为回调函数
+*/
+Bagpipe.prototype.push = function(method){
+  var args = [].slice.call(arguments,1);
+  var callback = args[args.length - 1];
+  if(typeof callback !== 'function'){
+    args.push(function(){});
+  }
+  if(this.options.disabled || this.limit < 1){
+    method.apply(null,args);
+    return this;
+  }
+  // 队列长度也超过限制值时
+  if(this.queue.length < queueLength || !this.options.refuse){
+    this.queue.push({
+      method:method,
+      args:args
+    });
+  }else{
+    var err = new Error('Too much async call in queue');
+    err.name = 'Too Much';
+    callback(err);
+  }
+  if(this.queue.length > 1){
+    this.emit('full',this.queue.length);
+  }
+  this.next();
+  return this;
+};
+// 继续执行队列中的后续动作
+Bagpipe.prototype.next = function(){
+  var that = this;
+  if(that.active < that.limit && that.queue.length){
+    var req = that.queue.shift();
+    that.run(req.method, req.args);
+  }
+};
+```
+next()方法主要判断活跃调用的数量，如果正常，将调用内部方法run()来执行真正的调用。
+```js
+Bagpipe.prototype.run = function(method,args){
+  var that = this;
+  that.active++;
+  var callback = args[args.length-1];
+  var timer = null;
+  var called = false;
+    // inject logic
+  args[args.length - 1] = function(err){
+    // anyway,clear the timer
+    if(timer){
+      clearTimeout(timer);
+      timer = null;
+    }
+    // if timeout,dont execute
+    if(!called){
+      that._next();
+      callback.apply(null,arguments);
+    }else{
+    // pass the outdated error
+      if(err){
+        that.emit('outdated',err);
+      }
+    }
+  };
+  var timeout = that.options.timeout;
+  if(timeout){
+    timer = setTimeout(function(){
+    // set called as true
+      called = true;
+      that._next();
+    // pass the exception
+      var err = new Error(timeout + 'ms timeout');
+      err.name = 'BagpipeTimeoutError';
+      err.data = {
+        name:method.name,
+        method:method.toString(),
+        args:args.slice(0,-1)
+      };
+      callback(err);
+    },timeout);
+  }
+  method.apply(null,args);
+};
+```
+用户传入的回调函数被真正执行前，被封装替换过。这个封装的回调函数内部的逻辑将活跃值的计数器减1后，主动调用next()执行后续等待的异步调用。<br>
+* 拒绝模式
+事实上，bagpipe还有一些深度的使用方式。对于大量的异步调用，也需要分场景进行区分，因为涉及并发控制，必然会造成部分调用需要进行等待。如果调用需要有实时方面的需求，那么需要快速返回，因为等到方法被真正执行时，可能已经超过了等待事件，即使返回了数据，也没有意义了。<br>
+这种场景下，需要快速失败，让调用方尽早返回，而不用浪费不必要的等待时间。bagpipe为此支持了拒绝模式<br>
+拒绝模式的使用只要设置下参数即可
+```js
+// 设定最大并发数为10
+var bagpipe = new Bagpipe(10,{
+  refuse:true
+});
+```
+在拒绝模式下，如果等待的调用队列也满了之后，新来的调用就直接返给它一个队列太忙的拒绝异常。<br>
+* 超时控制
+造成队列拥塞的主要原因是异步调用耗时太久，调用产生的速度远远高于执行的速度。超时控制就是为异步调用设置一个时间阀值，如果异步调用没有在规定时间内完成，我们先执行用户传入的回调函数，让用户得到一个超时异常，以尽早返回。然后让下一个等待队列中的调用执行。<br>
+```js
+// 设定最大并发数为10
+var bagpipe = new Bagpipe(10,{
+  timeout:3000
+});
+```
+* 小结
+异步调用的并发限制在不同场景下的需求不同：
+* 非实时场景下，让超出限制的并发暂时等待执行已经可以满足需求
+* 实时场景下，需要更细粒度、更合理的控制
+#### async的解决方案
+parallelLimit()，用于处理异步调用的限制
+```js
+async.parallelLimit([
+  function(callback){
+    fs.readFile('file1.txt','utf-8',callback);
+  },
+  function(callback){
+    fs.readFile('file2.txt','utf-8',callback);
+  }
+],1,function(err,results){
+  // todo
+})
+```
+parallelLimit()与parallel()类似，但多了一个用于限制并发数量的参数，使得任务只能同时并发一定数量，而不是无限制并发。<br>
+缺陷:<br>
+parallelLimit()无法动态地增加并行任务。为此，async提供了queue()方法来满足该需求
+```js
+var q = async.queue(function(file,callback){
+  fs.readFile(file,'utf-8',callback);
+},2);
+q.drain = function(){
+  // 完成了队列中的所有任务
+};
+fs.readdirSync('.').forEach(function(file){
+  q.push(file,function(err,data){
+    // TODO
+  });
+});
+```
+bagpipe更灵活，可以添加任意类型的异步任务，也可以动态添加异步任务，同时还能够在实时处理场景中加入拒绝模式和超时控制。（这波广告打🉐️ 好）<br>
+敬请期待 第五章 内存控制<br>
+
+
