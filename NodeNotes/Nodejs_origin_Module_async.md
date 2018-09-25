@@ -1035,4 +1035,92 @@ var bubbleSort = eval(Wind.compile("async",function(array){
 @ eval(Wind.compare("async",function(){}));<br>
 @ $await();<br>
 @ Wind.Async.sleep(20);<br>
-@ **异步任务定义**<br>
+* **异步任务定义**<br>
+eval()函数在业界一向是一个需要谨慎对待的函数，因为他能访问上下文和编译器，可能导致上下文混乱。大多数利用eval()函数的人都不能把握好它的用法。但是在wind的世界里，巧妙地利用了eval()访问上下文的特性。Wind.compile()会将普通的函数进行编译，然后交给eval()执行。换言之，`eval(Wind.compile("async",function(){}))`;定义了异步任务。`Wind.Async.sleep()`则内置了对setTimeout()的封装。<br>
+* $await()与任务模型<br>
+在定义完异步方法后，wind提供了$await()方法实现等待完成异步方法。但事实上，他并不是一个方法，也不存在于上下文中，只是一个等待的占位符，告知编译器这里需要等待。<br>
+$await()接受的参数是一个任务对象，表示等待任务结束后才会执行后续操作。每一个异步操作都可以转化为一个任务，wind正是基于任务模型实现的。
+```js
+var wind = require("wind");
+var Task = Wind.Async.Task;
+
+var readFileAsync = function(file, encoding){
+  return Task.create(function(t){
+    fs.readFile(file,encoding,function(err,file){
+      if(err){
+        t.complete('failure',err);
+      }else{
+        t.complete('success',file);
+      }
+    });
+  });
+};
+```
+除了通过`eval(Wind.compile("async",function(){}));`定义任务外，正式的任务创建方法为`Task.create()`。执行`readFileAsync()`进行偏函数转换得到真正的任务。异步方法在执行结束时，可以通过complete()传递failure或success信息，告知任务执行完毕。如果为failure则可以通过try/catch捕获异常。 **这略微有些打破前述try/catch无法捕获回调函数中异常的定论**。
+```js
+var task = readFileAsync('file.txt','utf-8');
+```
+感受一下wind的风采
+```js
+var serial = eval(Wind.compile("async",function(){
+  var file1 = $await(readFileAsync('file1.txt','utf-8'));
+  console.log(file1);
+  var file2 = $await(readFileAsync('file2.txt','utf-8'));
+  console.log(file2);
+  try{
+    var file3 = $await(readFileAsync('file3.txt','utf-8'));
+  }catch(err){
+    console.log(err);
+  }
+}));
+serial.start();
+```
+输出如下
+```js
+file1
+file2
+[error]
+```
+异步方法在js中通常会立即返回，但在wind中做到了不阻塞cpu但阻塞代码的目的。<br>
+并行方法处理：
+```js
+var parallerl = eval(Wind.compile("async",function(){
+  var result = $await(Task.whenAll({
+    file1:readFileAsync('file1.txt','utf-8'),
+    file2:readFileAsync('file2.txt','utf-8')
+  }));
+  console.log(result.file1);
+  console.log(result.file2);
+}));
+parallel().start();
+```
+wind提供了whenAll()来处理并发，通过$await关键字将等待配置的所有任务完成后才向下继续执行。<br>
+* 异步方法转换辅助函数
+近同步编程的体验需要我们将异步方法任务化。<br>
+辅助转换
+```js
+Wind.Async.Binding.fromCallback;
+Wind.Async.Binding.fromStandard;
+```
+node中异步方法调用有两种。
+A. 无异常调用，通常只有一个参数返回
+```js
+fs.exists("filepath",function(exists){
+  // 存在？ 
+})
+```
+而fromCallback用于转换这类异步调用为wind中的任务。<br>
+B. 带异常的调用，遵循规范将返回参数列表的第一个参数作为异常标示
+```js
+fs.readFile('file1.txt',function(err,data){
+  // err 标示异常
+})
+```
+而fromStandard就是用于转换这类异步调用到wind中的任务。<br>
+是故
+```js
+var readFileAsync = Wind.Async.Binding.fromStandard(fs.readFile);
+```
+5. 流程控制小结<br>
+事件发布/订阅模式相对算是一种较为原始的方式，Promise/Deferred模式贡献了一个非常不错的异步任务模型的抽象。而上述的这些异步流程控制方案与Promise/Deferred模式的思路不同，Promise/Deferred的重头在于封装异步的调用部分，流程控制库则显得没有模式，将处理的重点放置在回调函数的注入上。从自由度来讲，async,Step这些流程控制要相对灵活。EventProxy库主要借鉴事件发布/订阅模式和流程控制库通过高阶函数生成回调函数的方式实现。<br>
+### 异步并发控制
