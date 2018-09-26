@@ -800,7 +800,11 @@ class Basket{
   // 该函数用于比较shared_ptr，multiset成员会用到它
   static bool compare(const std::shared_ptr<Quote> &lhs, const std::shared_ptr<Quote> &rhs){ return lhs->isbn() < rhs.isbn();}
   // multiset保存多个报价，按照compsre成员排序
-  std::multiset<std::shared_ptr<Quote>,decltype(compare)*> items{compare};
+  std::multiset<std::shared_ptr<Quote>,decltype(compare)*> items{compare}; // 定义了一个指向Quote对象的shared_ptr的multiset。
+  // 这个multiset将使用一个与compare成员类型相同的函数来对其中的元素进行排序。 items
   };
 }
 ```
+我们的类使用一个multiset来存放交易信息，这样我们就能保存同一本书的多条交易记录，而且对于一本给定的书籍，它的所有交易信息都保存在一起。<br>
+multiset 的元素是shared_ptr。因为shared_ptr没有定义小于运算符，所以为了对元素排序我们必须提供自己的比较运算符。所以我们定义了一个名为compare的私有静态成员，该成员负责比较shared_ptr所指的对象的isbn。我们初始化multiset，通过类内初始值调用比较函数。<br>
+##### 定义Basket成员
