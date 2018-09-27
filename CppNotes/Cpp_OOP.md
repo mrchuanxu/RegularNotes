@@ -856,7 +856,7 @@ class Bulk_quote:public Quote{
   ...
 };
 ```
-因为我们拥有add_item的拷贝和移动版本，所以我们分别定义clone的左值和右值版本。每个clone韩素分配当前类型的一个新对象，其中const左值引用成员将它自己拷贝给新分配的对象；右值引用成员则将自己移动到新数据中。
+因为我们拥有add_item的拷贝和移动版本，所以我们分别定义clone的左值和右值版本。每个clone元素分配当前类型的一个新对象，其中const左值引用成员将它自己拷贝给新分配的对象；右值引用成员则将自己移动到新数据中。
 ```cpp
 class Basket{
   public:
@@ -872,3 +872,40 @@ class Basket{
 我们的clone是一个虚函数。sale的动态类型（通常）决定了到底运行Quote的函数还是Bulk_quote的函数。无论我们是拷贝还是移动数据，clone都返回一个新分配的对象的指针，该对象与clone所属的类型一致。我们把一个shared_ptr绑定到这个对象上，然后调用insert将这个新分配的对象添加到items中。<br>
 ⚠️ 因为shared_ptr支持派生类向基类的类型转换，所以我们能把shared_ptr<Quote>绑定到Bulk_quote*上。<br>
 ### 文本查询程序再探
+#### 面向对象的解决方案
+操作：<br>
+* eval，接受一个TextQuery对象并返回一个QueryResult，eval函数使用给定的TextQuery对象查找与之匹配的行。
+* rep，返回基础查询的string表示形式，eval函数使用rep创建一个表示匹配结果的QueryResult，输出运算符使用rep打印查询表达式。
+**关键概念：继承与组合**<br>
+当我们令一个类公有地继承另一个类时，派生类应当反映与基类的“是一种（Is A）”关系。在设计良好的类体系当中，公有派生类的对象应该可以用在任何需要基类对象的地方。<br>
+类型之间的另一种常见关系是“有一个（Has A）“关系，具有这种关系的类暗含成员的意思。<br>
+##### 抽象基类
+Query_base，整个查询继承体系的根节点。<br>
+![Query_base_map](./img/Query_Base_Map.png "Query_base继承体系")<br>
+##### 将层次关系隐藏于接口类中
+`Query q = Query("fiery")&Query("bird")|Query("wind");`如下所述，其隐含的意思是用户层代码将不会直接使用这些继承的类；相反，我们将定义一个名为Query的接口类，由它负责隐藏整个继承体系。Query类将保存一个Query_base指针，该指针绑定到Query_base的派生类对象上。Query类与Query_base类提供的操作是相同的：eval用于求查询的结果，rep用于生成查询的string版本，同时Query也会定义一个重载的输出运算符用于显示查询。<br>
+用户将通过Query对象的操作间接地创建并处理Query_base对象。我们定义Query对象的三个重载运算符以及一个接受string参数的Query构造函数，这些函数动态分配一个新的Query_base派生类的对象：<br>
+* &运算符生成一个绑定到新的AndQuery对象上的Query对象。
+* |运算符生成一个绑定到新的OrQuery对象上的Query对象。
+* ~运算符生成一个绑定到新的NotQuery对象上的Query对象。
+* 接受string参数的Query构造函数生成一个新的WordQuery对象。
+##### 理解这些类的工作机理
+一旦对象树构建完成后，对某一条查询语句的求值（或生成表示形式的）过程基本上就转换为沿着箭头方向依次对每个对象求值（或显示）的过程（由编译器为我们组织管理）。<br>
+#### Query_base类和Query类
+定义一个抽象基类
+```cpp
+class Query_base{
+  friend class Query;
+  protected:
+  using line_no = TextQuery::line_no; // 用于eval函数
+  virtual ~Query_base() = default;
+  private:
+  // eval返回与当前Query匹配的QueryResult
+  virtual QueryResult eval(const TextQuery&) const = 0;
+  // rep是表示查询的一个string
+  virtual std::string rep() const = 0;
+};
+```
+eval和rep都是纯虚函数，因此Query_base是一个抽象基类。所有对Query_base的使用都需要通过Query对象，因为Query需要调用Query_base的虚函数，所以我们将Query声明成Query_base的友元。<br>
+受保护的成员line_no将在eval函数内部使用。类似的，析构函数也是受保护的，因为它将（隐式地）在派生类析构函数中使用。<br>
+##### Query类
