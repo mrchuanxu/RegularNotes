@@ -945,13 +945,123 @@ cout << andq << endl;
 >> 移动：当移动时，合成的移动构造函数被调用。它将移动数据成员到新的对象。这时新对象的智能指针将会指向原对象的地址，而愿对象的智能指针为nullptr，新对象的智能指针的引用计数为1.<br>
 >> 赋值：合成赋值运算符被调用，结果和拷贝的相同的。<br>
 >> 销毁：合成的析构函数被调用。对象的智能指针的引用计数递减，当引用计数为0时，对象被销毁。<br>
-> ❓当一个 Query_base 类型的对象被拷贝、移动赋值或销毁时，将分别发生什么？
+
+> ❓当一个 Query_base 类型的对象被拷贝、移动赋值或销毁时，将分别发生什么？<br>
 >> 由合成的版本来控制。然而Query_base是一个抽象类，它的对象实际上是它的派生类对象。
 #### 派生类
 对于Query_base的派生类来说，最有趣的部分是这些派生类如何表示一个真实的查询。其中WordQuery类最直接，它的任务就是保存要查找的单词。<br>
 其他类分别操作一个或两个运算对象。
 ##### WordQuery类
+一个WordQuery类查找一个给定的string，它是在给定的TextQuery对象上实际执行查询的唯一一个操作：
+```cpp
+class WordQuery:public Query_base{
+  friend class Query; // Query使用WordQuery构造函数
+  WordQuery(const std::string &s):query_word(s){}
+  // 具体的类：WordQuery将定义所有继承而来的纯虚函数
+  QueryResult eval(const TextQuery &t) const { return t.query(query_word); }
+  std::string rep() const { return query_word; }
+  std::string query_word;      // 要查找的单词
+}；
+```
+和Query_base一样，WordQuery没有公有成员。同时，Query必须作为WordQuery的友元，这样Query才能访问WordQuery的构造函数。<br>
+每个表示具体查询的类都必须定义继承而来的纯虚函数 eval和rep。我们在WordQuery类的内部定义这两个操作:eval调用其TextQuery参数的query成员，由query成员在文件中实际进行查找；rep返回这个WordQuery表示的string（即query_word）。<br>
+定义了WordQuery类之后，我们就能定义接受string的Query构造函数了：
+```cpp
+inline Query::Query(const std::string &s):q(new WordQuery(s)){}
+```
+这个构造函数分配一个WordQuery，然后令其指针成员指向新分配的对象。<br>
 ##### NotQuery类以及～运算符
+～运算符生成一个NotQuery，其中保存着一个需要对其取反的Query：
+```cpp
+class NotQuery:public Query_base{
+  friend Query operator~(const Query &);
+  NotQuery(const Query &q):query(q){}
+  // 具体的类：NotQuery将定义所有继承而来的纯虚函数
+  std::string rep() const{ return "~("+query.rep()+")";}
+  QueryResult eval(const TextQuery&) const;
+  Query query;
+};
+inline Query operator~(const Query &operand){
+  return std::shared_ptr<Query_base>(new NotQuery(operand));
+}
+```
+因为NotQuery的所有成员都是私有的，所以我们一开始就要把～运算符设定为友元。<br>
+⚠️ 在NotQuery自己的rep成员中对rep的调用最终执行的是一个虚调用：query.rep()是对Query类rep成员的非虚调用，接着Query::rep将调用q->rep()，这是一个通过Query_base指针进行的虚调用。<br>
+~运算符动态分配一个新的NotQuery对象，其return语句隐式地使用接受一个shared_ptr<Query_base>的Query构造函数。也就是说，return语句等价于：
+```cpp
+// 分配一个❤新的NotQuery对象
+// 将所得的NotQuery指针绑定到一个shared_ptr<Query_base>
+shared_ptr<Query_base> tmp(new NotQuery(expr));
+return Query(tmp); // 使用接受一个shared_ptr的Query构造函数
+```
+eval成员比较复杂，因此我们将在类的外部实现它。
 ##### BinaryQuery类
+BinaryQuery类也是一个抽象基类，它保存操作两个运算对象的查询类型所需的数据
+```cpp
+class BinaryQuery:public Query_base{
+  protected:
+      BinaryQuery(const Query &l,const Query &r, std::string s):lhs(l),rhs(r),opSym(s){}
+      // 抽象类：BinaryQuery不定义eval
+      std::string rep() const{ return "("+lhs.rep()+" "+opSym+" "+rhs.rep()+")"; }
+      Query lhs,rhs; // 左侧和右侧运算对象
+      std::string opSym; // 运算符的名字
+};
+```
+BinaryQuery中的数据是两个运算对象及相应的运算符符号，构造函数负责接受两个运算对象和一个运算符符号，然后将他们存储在对应的数据成员中。<br>
+对rep的调用最终是对lhs和rhs所指Query_base对象的rep函数进行虚调用。<br>
+📒 BinaryQuery不定义eval，而是继承了该纯虚函数。因此，BinaryQuery也是一个抽象基类，我们不能创建BinaryQuery类型的对象。<br>
 ##### AndQuery类、OrQuery类及相应的运算符
+这两个类以及他们的运算符都非常相似。
+```cpp
+class AndQuery:pulic BinaryQuery{
+  friend Query operator&(const Query&,const Query&);
+  AndQuery(const Query &left, const Query &right):BinaryQuery(left,right,"&"){}
+  // 具体类：AndQuery继承了rep并且定义了其他纯虚函数
+  QueryResult eval(const TextQuery&) const;
+};
+inline Query operator&(const Query &lhs, const Query &rhs){
+  return std::shared_ptr<Query_base>(new AndQuery(lhs,rhs));
+}
+...
+```
+这两个类将各自的运算符定义成友元，并且各自定义了一个构造函数通过运算符创建BinaryQuery基类部分。它们继承BinaryQuery的rep函数，但是覆盖了eval函数。<br>
+return语句负责将shared_ptr转换成Query。
 #### eval函数
+eval函数是我们这个查询系统的核心。每个eval函数作用于各自的运算对象，同时遵循的内在逻辑也有所区别：OrQuery的eval操作返回两个运算对象查询结果的并集，而AndQuery返回交集。与他们相比，NotQuery的eval函数更加复杂一些：它需要返回的运算对象没有出现的文本行。<br>
+##### OrQuery::eval
+一个OrQuery表示的是它的两个运算对象结果的并集，对于每个运算对象来说，我们也是通过调用eval得到它的查询结果。因为运算对象的类型是Query，所以调用eval也就是调用Query::eval，而后者实际上是对潜在的Query_base对象的eval进行虚调用。每次调用完成后，得到的结果是一个QueryResult，它表示运算对象出现的行号。<br>
+```cpp
+QueryResult OrQUery::eval(const TextQuery& text) const{
+  // 通过Query成员lhs和rhs进行的虚调用
+  // 调用eval返回每个运算对象的QueryResult
+  auto right = rhs.eval(text), left = lhs.eval(text);
+  // 将左侧运算对象的行号拷贝到结果set中
+  auto ret_lines = make_shared < set<line_no>>(left.begin(), left.end());
+  // 插入右侧运算对象所得的行号
+  ret_lines->insert(right.begin(), right.end());
+  // 返回一个新的QueryResult， 它标示lhs和rhs的并集
+  return QueryResult(rep(),ret_lines, left.get_file());
+};
+```
+我们接受一对迭代器的set构造函数初始化ret_lines。一个QueryResult的begin和end成员返回行号set的迭代器，因此，创建ret_lines的过程实际上是拷贝了left集合的元素。接下来对ret_lines调用insert，并将right的元素插入进来。调用结束后，ret_lines将包含在left或right中出现锅的所有行号。<br>
+eval函数在最后构建并返回一个表示混合查询匹配的QueryResult。调用rep生成所需的string，调用get_file获取指向文件的shared_ptr。因为left和right指向的是同一个文件，所以使用哪个执行get_file函数并不重要。<br>
+##### AndQuery::eval
+和OrQuery类似，唯一区别是它调用了一个标准库算法来求得两个查询结果中共有的行。
+```cpp
+...
+// 将两个范围的交集写入一个目的迭代器中，最后一个实参表示目的位置。
+set_insertsection(left.begin(),left.end(),right.begin(),right.end(),inserter(*ret_lines,ret_lines->begin()));
+```
+##### NotQuery::eval
+```cpp
+...
+```
+结束语：<br>
+😱 ，好多😨 😨 😨，好难理解啊！继承使得我们可以编写一些新的类，这些新类既能共享其基类的行为，又能根据需要覆盖或添加行为。**动态绑定使得我们可以忽略类型之间的差异** ，其机理是在运行时根据对象的动态类型来选择运行函数的哪个版本。**继承和动态绑定的结合** 使得我们能够编写 **具有特定类型行为但又能独立于类型的程序**。<br>
+在C++语言中， **动态绑定只作用于虚函数** ，并且需要通过指针或引用调用。<br>
+在派生类对象中包含有与它的每个基类对应的子对象。因为所有派生类对象都含有基类部分，所以我们 **能将派生类的引用或指针转换为一个可访问的基类引用或指针**。<br>
+当执行派生类的构造、拷贝、移动和赋值操作时，首先构造、拷贝、移动和赋值其中的基类部分，然后才轮到派生类部分。**析构函数的执行顺序则正好相反** ，首先销毁派生类，接下来执行基类子对象的析构函数。**基类通常都应该定义一个虚析构函数** ，即使基类根本不需要析构函数也最好这么做。将基类的析构函数定义成虚函数的原因是为了确保当我们删除一个基类指针，而该指针实际指向一个派生类对象时，程序也能正确运行。<br>
+派生类为它的每个基类提供一个保护级别。public基类的成员也是派生类接口的一部分；private基类的成员是不可访问的；protected基类的成员对于派生类的派生类时可访问的，但是对于派生类的用户不可访问。<br>
+15章到此结束 谢谢观赏，有空常来！😄。
+
+
