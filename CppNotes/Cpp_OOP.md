@@ -909,3 +909,49 @@ class Query_base{
 eval和rep都是纯虚函数，因此Query_base是一个抽象基类。所有对Query_base的使用都需要通过Query对象，因为Query需要调用Query_base的虚函数，所以我们将Query声明成Query_base的友元。<br>
 受保护的成员line_no将在eval函数内部使用。类似的，析构函数也是受保护的，因为它将（隐式地）在派生类析构函数中使用。<br>
 ##### Query类
+```cpp
+// 这是一个管理Query_base继承体系的接口类
+class Query{
+  // 这些运算符需要访问接受shared_ptr的构造函数，而该函数是私有的
+  friend Query operator~(const Query&);
+  friend Query operator|(const Query&,const Query&);
+  friend Query operator&(const Query&,const Query&);
+  public:
+      Query(const std::string&); // 构建一个新的WordQuery
+      // 接口函数：调用对应的Query_base操作。
+      QueryResult eval(const TextQuery &t) const{ return q->eval(t); } // 实际调用哪个函数版本将由q所指的对象类型决定，并且直到运行时才能最终确定。
+      std::string rep() const { return q->rep(); }
+  private:
+      Query(std::shared_ptr<Query_base> query):q(query){}
+      std::shared_ptr<Query_base> q;
+};
+```
+我们首先将创建Query对象的运算符声明为友元，之所以这么做是因为这些运算符需要访问那个私有构造函数。<br>
+##### Query的输出运算符
+```cpp
+std::ostream & operator<<(std::ostream &os, const Query &query){
+  // QUery::rep 通过它的Query_base指针对rep()进行了虚调用
+  return os << query.rep();
+}
+```
+当我们打印一个Query时。输出运算符调用Query类的公有rep成员。运算符函数通过指针成员虚调用当前Query所指对象的rep成员。
+```cpp
+Query andq = Query(sought) & Query(sought2);
+cout << andq << endl;
+```
+输出运算符将调用andq的`Query::rep`，而`Query::rep`通过它的`Query_base`指针虚调用`Query_base`版本的rep函数。因为andq指向的是一个`AndQuery`对象，所以本次的函数调用将运行`AndQuery::rep`。<br>
+> ❓ 当一个 Query 类型的对象被拷贝、移动、赋值或销毁时，将分别发生什么？
+>> 拷贝：当被拷贝时，合成的拷贝构造函数被调用。它将拷贝两个数据成员至新的对象。而在这种情况下，数据成员是一个智能指针，当拷贝时，相应的智能指针指向相同的地址，计数器增加1.<br>
+>> 移动：当移动时，合成的移动构造函数被调用。它将移动数据成员到新的对象。这时新对象的智能指针将会指向原对象的地址，而愿对象的智能指针为nullptr，新对象的智能指针的引用计数为1.<br>
+>> 赋值：合成赋值运算符被调用，结果和拷贝的相同的。<br>
+>> 销毁：合成的析构函数被调用。对象的智能指针的引用计数递减，当引用计数为0时，对象被销毁。<br>
+> ❓当一个 Query_base 类型的对象被拷贝、移动赋值或销毁时，将分别发生什么？
+>> 由合成的版本来控制。然而Query_base是一个抽象类，它的对象实际上是它的派生类对象。
+#### 派生类
+对于Query_base的派生类来说，最有趣的部分是这些派生类如何表示一个真实的查询。其中WordQuery类最直接，它的任务就是保存要查找的单词。<br>
+其他类分别操作一个或两个运算对象。
+##### WordQuery类
+##### NotQuery类以及～运算符
+##### BinaryQuery类
+##### AndQuery类、OrQuery类及相应的运算符
+#### eval函数
