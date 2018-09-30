@@ -113,3 +113,72 @@ template<typename T, typename N> constexpr unsigned size(const T (&arr)[N]){
 }
 ```
 #### 类模版
+**类模版（class template）** 是用来生成类的蓝图。与函数模版不同之处是，编译器不能为类模版推断模版参数类型。为了使用类模版，我们必须在模版名后的尖括号中提供额外信息---用来代替模版参数的模版实参列表。<br>
+##### 定义类模版
+🌰 实现之前的StrBlob的模版版本。并命名为Blob，意指它不再针对string。模版会提供对元素的共享（且核查过的）访问能力。
+```cpp
+template <typename T> class Blob{
+  public:
+      typedef T value_type;
+      typedef typename std::vector<T>::size_type size_type;
+      // 构造函数
+      Blob();
+      Blob(std::initializer_list<T> il);
+      // Blob 中的元素数目
+      size_type size() const { return data->size(); }
+      bool empty() const { return data->empty(); }
+      // 添加和删除元素
+      void push_back(const T &t) { data->empty(); }
+      // 移动版本
+      void push_back(T &t) {data->push_back(std::move(t)); }
+      void pop_back();
+      // 元素访问
+      T& back();
+      T& operator[](size_type i); // 下标运算
+      private:
+      std::shared_ptr<std::vector<T>> data;
+      // 若data[i] 无效，则抛出msg
+      void check(size_type i, const std::string &msg) const;
+      };
+```
+##### 实例化类模版
+当使用一个类模版时，我们必须提供额外信息。额外信息是 **显式模版实参（eplicit template argument）**列表，它们被绑定到模版参数，编译器使用这些模版实参来实例化出特定的类。<br>
+🌰 
+```cpp
+Blob<int> ia;    // 空Blob<int>
+Blob<int> ia2 = {0,1,2,3,4};  // 有5个元素的Blob<int>
+```
+编译器会实例化出一个与下面定义等价的类
+```cpp
+template<> class Blob<int>{
+  typedef typename std::vector<int>::size_type size_type;
+  Blob();
+  Blob(std::initializer_list<int> il);
+  // ..
+  int& operator[](size_type i);
+  ...
+}
+```
+对我们指定的每一种元素类型，编译器都会生成一个不同的类（独立的类）。<br>
+```cpp
+Blob<string> names;
+Blob<double> prices;
+```
+##### 在模版作用域中引用模版类型
+类模版的名字不是一个类型名。类模版用来实例化类型，而一个实例化的类型总是包含模版参数的。<br>
+一个类模版中的代码如果使用了另一个模版，通常不将一个实际类型（或值）的名字用作其模版实参。相反的，我们通常将模版自己的参数当作被使用模版的实参。例如，我们的data成员使用两个模版，vector和shared_ptr。我们知道，无论何时使用模版都必须提供模版实参。
+```cpp
+std::shared_ptr<std::vector<T>> data;
+```
+实例化就成
+```cpp
+shared_ptr<vector<string>> data;
+```
+##### 类模版的成员函数
+与其他类相同，我们既可以在类模版内部，也可以在类模版外部为其定义成员函数，且定义在类模版内的成员函数被隐式地声明为内联函数。<br>
+类模版的成员函数本身是一个普通函数。<br>
+```cpp
+ret-type StrBlob::member-name(parm-list);
+template <typename T> ret-type Blob<T>::member-name(parm-list);
+```
+
