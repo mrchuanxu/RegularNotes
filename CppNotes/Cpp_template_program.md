@@ -176,9 +176,59 @@ shared_ptr<vector<string>> data;
 ```
 ##### 类模版的成员函数
 与其他类相同，我们既可以在类模版内部，也可以在类模版外部为其定义成员函数，且定义在类模版内的成员函数被隐式地声明为内联函数。<br>
-类模版的成员函数本身是一个普通函数。<br>
+类模版的成员函数本身是一个普通函数。但是类模版的每个实例都有其自己版本的成员函数。因此，类模版的成员函数具有和模版相同的模版参数。<br>
 ```cpp
 ret-type StrBlob::member-name(parm-list);
 template <typename T> ret-type Blob<T>::member-name(parm-list);
 ```
+##### check和元素访问成员
+定义一个check成员
+```cpp
+template <typename T> void Blob<T>::check(size_type i, const std::string &msg) const{
+  if(i>=data->size())
+      throw std::out_of_range(msg);
+}
+```
+下标运算符和back函数用模版参数指出返回类型
+```cpp
+template <typename T> T& Blob<T>::back(){
+  check(0,"back on empty Blob");
+  return data->back();
+}
+template <typename T> T& Blon<T>::operator[](size_type i){
+  // 如果i太大，check会抛出异常，阻止访问一个不存在的元素
+  check(i,"subscript out of range");
+  return (*data)[i];
+}
+```
+在原StrBlob类中，这些运算符返回string&。而模版版本则返回一个引用，指向用来实例化Blob的类型。<br>
+pop_back函数
+```cpp
+template <typename T> void Blob<T>::pop_back(){
+  check(0,"pop_back on empty Blob");
+  data->pop_back;
+}
+```
+##### Blob构造函数
+```cpp
+template <typename T> Blob<T>::Blob():data(std::make_shared<std::vector<T>>()){
 
+}
+```
+类似的，接受一个initializer_list参数的构造函数将其类型参数T作为initializer_list参数的元素类型。
+```cpp
+template<typename T> Blob<T>::Blob(std::initializer_list<T> il):data(std::make_shared<std::vector<T>> (il)){}
+```
+类似默认构造函数，此构造函数分配一个新的vector。<br>
+```cpp
+Blob<string> articles = {"a","b","c"};
+```
+##### 类模版成员函数实例化
+默认情况下，一个类模版的成员函数只有当程序用到它时才进行实例化
+```cpp
+// 实例化Blob<int> 和接受initializer_list<int> 的构造函数
+Blob<int> squares = {1,2,3,4,5,6,7,8,9,0};
+// 实例化Blob<int>::size() const
+...
+```
+##### 在类代码内简化模版类名的使用
