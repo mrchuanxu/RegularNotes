@@ -232,3 +232,263 @@ Blob<int> squares = {1,2,3,4,5,6,7,8,9,0};
 ...
 ```
 ##### 在类代码内简化模版类名的使用
+当我们使用一个类模版类型时必须提供模版实参，但这一规则有一个例外。在类模版的作用域中，我们可以直接使用模版名而不提供实参。<br>
+```cpp
+// 若试图访问一个不存在的元素，BlobPtr抛出一个异常
+template <typename T> class BlobPtr{
+  public:
+  BlobPtr():curr(0){ }
+  BlobPtr(Blob<T> &a,size_t sz=0):wptr(a.data),curr(sz){}
+  T& operator*() const{ auto p = check(curr, "deference past end");
+  return (*p)[curr]; //  ( *p) 为本对象指向的vector
+  }
+  ...
+}
+```
+##### 在类模版外使用类模版名
+当我们在类模版外定义其成员时，必须记住，我们并不在类的作用域中，直到遇到类名才表示进入类的作用域。
+```cpp
+// 后置：递增/递减对象但返回原值
+template <typename T> BlobPtr<T> BlobPtr<T>::operator++(int){
+  // 此处无须检查；调用前置递增时会进行检查
+  BlobPtr ret = *this; // 保存当前值
+  ++*this; // 推进一个元素；前置++检查递增是否合法。
+  return ret; // 返回保存的状态
+}
+```
+由于返回类型位于类的作用域之外，我们必须指出返回类型是一个实例化的BlobPtr，它所用类型与类实例化所用类型一致。在函数体内，我们已经进入类的作用域，因此在定义ret时无须重复模版实参。如果不提供模版实参，则编译器将假定我们使用的类型与成员实例化所用类型一致。因此，ret的定义与如下代码等价：
+```cpp
+BlobPtr<T> ret = *this;
+```
+📒 在一个类模版的作用域内，我们可以直接使用模版名而不必指定模版实参。<br>
+##### 类模版和友元
+当一个类包含一个友元声明时， **类与友元各自是否是模版是相互无关的**。a. 如果一个类模版包含一个非模版友元，则友元被授权可以访问所有模版实例。b. 如果友元自身是模版，类可以授权给所有友元模版实例，也可以只授权给特定实例。<br>
+##### 一对一友好关系
+类模版与另一个（类或函数）模版间友好关系的最常见的形式是建立对应实例及其友元间的友好关系。例如，我们的Blob类应该将BlobPtr类和一个模版版本的Blob相等运算符定义为友元。<br>
+为了引用（类或函数）模版的一个特定实例，我们必须首先声明模版自身。一个模版声明包括模版参数列表：
+```cpp
+// 前置声明，在Blob中声明友元所需要的
+template <typename> class BlobPtr; 
+template <typename> class Blob; // 运算符==中的参数所需要的
+template <typename T> bool operator==(const Blob<T>&, const Blob<T>&);
+template <typename T> class Blob{
+  // 每个Blob实例将访问权限授予相同类型实例化的BlobPtr和相等运算符
+  friend class BlobPtr<T>;
+  friend bool operator==<T> (const Blob<T>&, const Blob<T>&);
+  ...
+} 
+```
+我们首先将Blob、BlobPtr和operator==声明为模版。这些声明是operator==函数的参数声明以及Blob中的友元声明所需要的。<br>
+友元的声明用Blob的模版形参作为它们自己的模版实参。
+```cpp
+Blob<char> ca; // BlobPtr<char>和operator==<char>都是本对象的友元
+```
+BlobPtr<char> 的成员可以访问ca（或任何其他Blob<char>对象）的非public部分，但ca对ia（或任何其他Blob<int>对象）或Blob的任何其他实例都没有特殊访问权限。<br>
+##### 通用和特定的模版友好关系
+一个类也可以将另一个模版的每个实例都声明为自己的友元，或者限定特定的实例为友元：
+```cpp
+// 前置声明，在将模版的一个特定实例声明为友元时要用到
+template <typename T> class Pal;
+class C{ // C是一个普通的非模版类
+    friend class Pal<C>; // 用类C实例化的Pal是C的一个友元
+    // Pal2的所有实例都是C的友元；这种情况无须前置声明
+    template <typename T> friend class Pal2;
+};
+template <typename T> class C2{ // C2本身是一个类模版
+    // C2的每个实例将相同实例化的Pal声明为友元
+    friend class Pal<T>; // Pal的模版声明必须在作用域之内
+    // Pal2的所有实例都是C2的每个实例的友元，不需要前置声明
+    template <typename X> friend class Pal2;
+    // Pal3是一个非模版类，它是C2所有实例的友元
+    friend class Pal3; // 不需要Pal3的前置声明
+}
+```
+为了让所有实例成员友元，友元声明中必须使用与类模版本身不同的模版参数。<br>
+##### 令模版自己的类型参数成为友元
+```cpp
+template <typename T> class Bar{
+  friend T; // 将访问权限授予用来实例化Bar的类型
+  ...
+}
+```
+##### 模版类型别名
+```cpp
+typedef Blob<string> StrBlob;
+```
+新标准允许我们为类模版定义一个类型别名
+```cpp
+template<typename T> using twin = pair<T,T>;
+twin<string> authors; // authors是一个pair<string,string>
+```
+一个模版类型别名是一族类的别名
+```cpp
+twin<int> win_loss;  // win_loss是一个pair<int,int>
+```
+当我们定义一个模版类型别名时，可以固定一个或多个模版参数
+```cpp
+template <typename T> using partNo = pair<T,unsigned>;
+partNo<string> books; // books 是一个pair<string,unsigned>
+partNo<Vehicle> cars; // cars是一个pair<Vehicle,unsigned>
+partNo<Student> kids; // kids是一个pair<Student, unsigned>
+```
+first，second<br>
+##### 类模版的static成员
+```cpp
+template <typename T> class Foo{
+  public:
+     static std::size_t count(){ return ctr; }
+     // 其他接口成员
+  private:
+     static std::size_t ctr;
+     // 其他实现成员
+}
+```
+```cpp
+Foo<string> fs;
+Foo<int> fi,fi2,fi3;
+```
+每个Foo实例都有自己的static成员实例。模版类中的每个static数据成员必须有且仅有一个定义。但是，**类模版的每个实例都有一个独有的static对象**。因此，与定义模版的成员函数类似，我们将static数据成员也定义为模版<br>
+```cpp
+template <typename T> size_t Foo<T>::ctr = 0; // 定义并初始化ctr
+```
+与非模版类的静态成员相同，我们可以通过类类型对象来访问一个类模版的static成员，也可以使用作用域运算符直接访问成员。
+```cpp
+Foo<int> fi; // 实例化Foo<int>类和static数据成员ctr
+auto ct = Foo<int>::count(); // 实例化Foo<int>::count
+ct = fi.count(); // 使用Foo<int>::count
+ct = Foo::count(); // ❌ 不知道使用那个？
+```
+一个static成员函数只有在使用时才会实例化。
+函数模版 `template <typename T> T functionName(){}`<br>
+类模版 `template <typename T> class className{}`<br>
+#### 模版参数
+##### 模版参数与作用域
+模版参数遵循普通的作用域规则。一个模版参数名的可用范围是其声明之后，至模版声明或定义结束之前。与任何其他名字一样，模版参数会隐藏外层作用域中声明的相同名字。<br>
+```cpp
+typedef double A;
+template <typename A, typename B> void f(A a,B b){
+  A tmp = a; // tmp的类型为模版参数A的类型，而非double
+  double B; // ❌ 重声明模版参数B
+}
+```
+正常的名字隐藏规则决定了A的typedef被类型参数A隐藏。因此，tmp不是一个double，其类型是使用f时绑定到类型参数A的类型。
+##### 模版声明
+模版声明必须包含模版参数
+```cpp
+template <typename T> int compare(const T&, const T&);
+template <typename T> class Blob;
+```
+三个calc都指向相同的函数模版
+```cpp
+template <typename T> T calc(const T&, const T&);
+...
+```
+##### 使用类的类型成员
+:: 作用域运算符<br>
+告诉编译器是一个类型 typename
+```cpp
+template <typename T> typename T::value_type top(const T& c){
+  if(!c.empty())
+      return c.back();
+  else
+      return typename T::value_type();
+}
+```
+typename 指明其返回类型并在c中没有元素时生成一个值初始化的元素返回给调用者。<br>
+##### 默认模版实参
+只有当它右侧所有参数都有默认实参时，它才可以有默认实参。<br>
+```cpp
+template <typename T, typename F = less<T>> int compare(const T &v1, const T &v2, F f = F()){
+  ...
+}
+bool i = compare(0,42); // 使用less；i为-1
+Sales_Data item1(cin), item2(cin);
+bool j = compare(item1,item2,compareIsbn);
+```
+##### 模版默认实参与类模版
+尖括号指出类必须从一个模版实例化而来。<br>
+特别是，如果一个类模版为其所有模版参数都提供了默认实参。且我们希望使用这些默认实参，就必须在模版名之后跟一个空尖括号对：
+```cpp
+template <class T = int> class Numbers{
+  public:
+      Numbers(T v = 0):val(v){}
+      // 对数值的各种操作
+  private:
+     T val; 
+};
+Numbers<long double> lots_of_precision;
+Numbers<> averages_precision; // 空<>表示我们希望使用默认类型
+```
+#### 成员模版
+一个类（无论是普通类还是类模版）可以包含本身是模版的成员函数。这种成员被称为 **成员模版(member template)**
+##### 普通（非模版）类的成员模版
+```cpp
+// 函数对象类，对给定指针执行delete
+class DebugDelete{
+  public:
+      DebugDelete(std::ostream &s = std::cerr):os(s){
+        // 与任何函数模版相同，T的类型由比编译器推断
+        template <typename T> void operator()(T* p) const{
+          os<< "deletint unique_ptr" << std::endl;
+          delete p;
+        }
+  private:
+      std::ostream &os;
+      }
+};
+```
+##### 类模版的成员函数
+对于类模版，我们也可以为其定义成员模版。在此情况下，类和成员各自有自己的、独立的模版参数。<br>
+```cpp
+template <typename T> class Blob{
+  template <typename It> Blob(It b,It e);
+  // ...
+}
+```
+希望支持不同类型序列的迭代器，因此将构造函数定义为模版。<br>
+成员模版是函数模版。<br>
+```cpp
+template <typename T> template <typename It> Blob<T>::Blob(It b,It e):data(std::make_shared<std::vector<T>>(b,e)){}
+```
+##### 实例化与成员模版
+为了实例化一个类模版的成员模版，我们必须同时提供类和函数模版的实参。<br>
+```cpp
+int ia[] = {1,2,3,4,5,6,7};
+vector<long> vi = {0,1,2,3,4,5,6,7};
+list<const char*> w = {"now","is","the","time"};
+// 实例化Blob<int> 类及其接受两个int*参数的构造函数
+Blob<int> a1(begin(ia),end(ia)); // 构造函数自己实例化推断结果为int*    Blob<int>::Blob(int*,int*);
+...
+```
+#### 控制实例化
+显式实例化
+```cpp
+extern template declaration; // 实例化声明
+template declaration; // 实例化定义
+```
+declaration 是一个类或函数声明，其中所有模版参数已被替换为模版实参
+```cpp
+extern template class Blob<string>;  // 声明
+template int compare(const int&, const int&); // 定义
+```
+由于编译器在使用一个模版时自动对其实例化，因此extern声明必须出现在任何使用此实例化版本的代码之前<br>
+⚠️ 对每个实例化声明，在程序中的某个位置必须有其显式的实例化定义。<br>
+##### 实例化定义会实例化所有成员
+📒 在一个类模版的实例化定义中，所用类型必须能用于模版的所有成员函数。<br>
+#### 效率与灵活性
+删除器。
+##### 在运行时绑定删除器
+shared_ptr，必须能直接访问其删除器。即，删除器必须保存为一个指针或一个封装了的指针的类。<br>
+reset可以赋予此shared_ptr另一种类型的删除器。通常，类成员的类型在运行时是不能改变的。因此，不能直接保存删除器。<br>
+```cpp
+// del的值只有在运行时才知道；通过一个指针来调用它
+del?:del(p):delete p; // del(p)需要运行时跳转del的地址
+```
+##### 在编译时绑定删除器
+unique_ptr    `del(p)`
+### 模版实参推断
+
+cpp primer 2018102 finish 600page by trans<br>
+接下来是实践的时刻！😂 
+
+
