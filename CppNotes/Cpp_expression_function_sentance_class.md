@@ -16,19 +16,19 @@ C++语言提供了一套丰富的运算符，并定义了这些运算符作用�
 @ 内置解引用运算符、string 和 vector 的下标运算度的求值结果都是右值<br>
 @ 内置类型和迭代器的递增递减运算符作用于右值运算对象，其前置版本所得的结果也是左值<br>
 使用关键字 decltype 的时候，左值和右值也有所不同。如果表达式的求值结果是左值，decltype 作用于该表达式（非变量）得到一个引用类型。<br>
-举个例子： 假定 p 的类型是 int *,因为解引用运算符生成左值，所以 decltype(*p)的结果是 int &。另一方面，因为取地址运算符生成右值，所以 decltype(&p)的结果是 int \*\*,也就是说，结果是一个指向整型指针的指针 <br>
+举个例子： 假定 p 的类型是 int *,因为解引用运算符生成左值，所以 decltype(*p)的结果是 int &。另一方面，因为取地址运算符生成右值，所以 decltype(&p)的结果是 int **,也就是说，结果是一个指向整型指针的指针 <br>
 
 ## 优先级与结合律
 
 复合表达式是指含有两个或多个运算符的表达式。求复合表达式的值需要首先将运算符和运算对象结合在一起，优先级与结合律决定了运算对象结合的方式。表达式中的括号无视上述规则。<br>
 
-**算术运算符** + - \* % /<br>
+**算术运算符** `+ - * % /`<br>
 
 **逻辑和关系运算符** ！,<,<=,>,>=,==,!=,&&,||<br>
 
-**赋值运算符** 1.赋值运算符的左侧运算对象必须是一个可修改的左值。2.赋值运算的结果是它的左侧运算对象，并且是一个左值。C++11 标准允许使用花括号括起来的初始值列表作为赋值语句的右侧运算对象： vector<int> vi; vi={0,1,2,3,4,5,6,7,8,9};<br>
+**赋值运算符** 1.赋值运算符的左侧运算对象必须是一个可修改的左值。2.赋值运算的结果是它的左侧运算对象，并且是一个左值。C++11 标准允许使用花括号括起来的初始值列表作为赋值语句的右侧运算对象： `vector<int> vi; vi={0,1,2,3,4,5,6,7,8,9};`<br>
 
-3.赋值运算满足右结合律 string s1,s2; s1=s2="ojbk";<br>
+3.赋值运算满足右结合律 `string s1,s2; s1=s2="ojbk";`<br>
 
 4.赋值运算优先级较低<br>
 
@@ -100,7 +100,7 @@ sizeof(type)<br>
 
 sizeof expr //返回的是表达式结果类型的大小<br>
 
-Sales_data data,\*p;<br>
+Sales_data data,*p;<br>
 
 sizeof(Sales_data); //存储 Sales_data 类型的对象所占的空间大小<br>
 
@@ -108,7 +108,7 @@ sizeof data; //data 的类型的大小<br>
 
 sizeof p; // 指针所占空间大小<br>
 
-sizeof \*p; //p 所指类型的空间大小<br>
+sizeof *p; //p 所指类型的空间大小<br>
 
 sizeof data.revenue; //Sales_data 的 revenue 成员对应类型的大小<br>
 
@@ -586,13 +586,13 @@ const int & ri = 42;//**允许一个常量引用绑定一个非常量，字面�
 
 尽管不能以值传递的方式传递数组，但是我们可以把形参写成类似数组的形式。<br>
 
-void print(const int \*);<br>
+void print(const int *);<br>
 
 void print(const int []);<br>
 
 void print(const int[10]);<br>
 
-上面三个函数是等价的。每个函数的唯一形参都是 const int\*类型。<br>
+上面三个函数是等价的。每个函数的唯一形参都是 const int *类型。<br>
 
 ```cpp
 int i = 0, j [3] = {1,1,1};
@@ -636,7 +636,7 @@ void print(int (&arr)[10]){//arr 是具有10个整数的整型数组的引用
 
 **main: 处理命令行选项**<br>
 
-int main(int argc,char \*argv[]){}
+int main(int argc,char *argv[]){}
 
 ### 含有可变形参的函数
 
@@ -1083,9 +1083,9 @@ isbn 函数，紧随参数列表之后的 const 关键字，这里 const 的作�
 
 @默认情况下，this 的类型是指向类类型的非常量版本的常量指针。<br>
 
-例如在 Sales_data 成员函数中，this 的类型是 Sales_data \*const。 **尽管 this 是隐式的，但它仍然需要遵循初始化规则，意味着（在默认情况下）我们不能把 this 绑定到一个常量对象上。这一情况也就使得我们不能在一个常量对象上调用普通的成员函数。<br>**
+例如在 Sales_data 成员函数中，this 的类型是 Sales_data  *const。 **尽管 this 是隐式的，但它仍然需要遵循初始化规则，意味着（在默认情况下）我们不能把 this 绑定到一个常量对象上。这一情况也就使得我们不能在一个常量对象上调用普通的成员函数。<br>**
 
-如果 isbn 是一个普通函数而且 this 是一个普通的指针参数，则我们应该把 this 声明成 const Sales_data \*const。毕竟，在 isbn 的函数体内不会改变 this 所指的对象，所以把 this 设置为指向常量的指针有助于提高函数的灵活性。<br>
+如果 isbn 是一个普通函数而且 this 是一个普通的指针参数，则我们应该把 this 声明成 const Sales_data *const。毕竟，在 isbn 的函数体内不会改变 this 所指的对象，所以把 this 设置为指向常量的指针有助于提高函数的灵活性。<br>
 
 @允许把 const 关键字放在成员函数的参数列表之后，此时，紧跟在参数列表后面的 const 表示 this 是一个指向常量的指针。像这样，使用 const 成员函数被称作常量成员函数。<br>
 
@@ -1257,7 +1257,7 @@ Sales_data::Sales_data(std::stream &is){
 
 构造函数没有返回类型，所以上述定义从我们执行的函数名字开始。
 <br>
-在上例中，我们使用\*this 将"this"对象作为实参传递给 read 函数。<br>
+在上例中，我们使用 *this 将"this"对象作为实参传递给 read 函数。<br>
 
 ### 拷贝、赋值和析构
 
@@ -1312,7 +1312,7 @@ Sales_data add(const Sales_data&, const Sales_data&);
 ### 类的其他特性
 
 ### 类成员再探
-类型成员，类的成员的类内初始值、可变数据成员、内联成员函数、从成员函数返回\*this、关于如何定义并使用类类型以及友元类。<br>
+类型成员，类的成员的类内初始值、可变数据成员、内联成员函数、从成员函数返回 *this、关于如何定义并使用类类型以及友元类。<br>
 
 为了展示这些特性，定义一个相互关联的类，分别是 Screen 和 Window_mgr<br>
 
@@ -1393,7 +1393,7 @@ private:
 
 当我们初始化类类型的成员时，需要为构造函数传递一个符合成员类型的实参。
 
-返回\*this 的成员函数
+返回 *this 的成员函数
 
 ```cpp
 class Screen{
@@ -1424,13 +1424,13 @@ return *this;
 ```
 
 和 move 操作一样，我们 set 成员的返回值是调用 set 的对象的引用。返回引用的函数的左值的，意味着这些函数返回的是对象本身而非对象的副本。<be>
-myScreen.move(4,0).set('_');<=> myScreen.move(4,0); myScreen.set('_');//把光标移动到一个指定的位置，然后设置该位置的字符值<br>
+`myScreen.move(4,0).set('_')`;<=> `myScreen.move(4,0); myScreen.set('_');`//把光标移动到一个指定的位置，然后设置该位置的字符值<br>
 
 这些操作将在同一个对象上执行。<br>
 
-从 const 成员函数返回\*this<br>
+从 const 成员函数返回*this<br>
 
-添加一个 display 操作，显示一个 Screen，这个 display 并不需要改变它的内容，因此我们令 display 为一个 const 成员，此时，this 将是一个指向 const 的指针而\*this 是 const 对象。由此推断，display 的返回类型应该是 const Sales_data&。然而，如果真的令 display 返回一个 const 的引用，则我们将不能把 display 嵌入到一组动作的序列中去：<br>
+添加一个 display 操作，显示一个 Screen，这个 display 并不需要改变它的内容，因此我们令 display 为一个 const 成员，此时，this 将是一个指向 const 的指针而 *this 是 const 对象。由此推断，display 的返回类型应该是 const Sales_data&。然而，如果真的令 display 返回一个 const 的引用，则我们将不能把 display 嵌入到一组动作的序列中去：<br>
 
 ```cpp
 Screen myScreen;
