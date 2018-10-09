@@ -8,14 +8,17 @@ using std::endl;
 using std::string;
 using namespace std;
 
-extern int i = 45; // 仅声明
+extern int i; // 仅声明
 const int j = 90;
 int getNumber(const string &s);
 struct Sales_data
 {
-  string bookNo;
+  string isbn() const { return bookNo; };
+  Sales_data& combine(const Sales_data&);
+  double avg_price() const;
   unsigned units_sold = 10;
   double revenue = 0.0;
+  string bookNo;
 };
 size_t count_calls()
 {
@@ -45,8 +48,19 @@ void error_msg(initializer_list<std::string> li)
 }
 
 constexpr int new_size() { return 42; }
+bool lengthCompare(const string &s1,const string &s2){
+  return s1.size() > s2.size();
+}
+bool (*pf)(const string &s1,const string &s2);
+void useBigger(const string &s1, const string &s2, bool pf(const string &, const string &));
 int main()
 {
+  pf = lengthCompare;
+  bool b1 = pf("helloooo","googbye");
+  cout << "b1" << b1 << endl;
+  const string s1 = "hi";
+  const string s2 = "bo";
+  // useBigger(s1,s2,lengthCompare);
   for (size_t i = 0; i != 10; ++i)
   {
     cout << count_calls() << endl;
