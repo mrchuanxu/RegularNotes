@@ -177,3 +177,113 @@ var useMem = function(){
 #### 小结
 Node的内存构成主要由通过V8进行分配的部分和Node自行分配的部分。受V8的垃圾回收限制的主要是V8的堆内存。
 ### 内存泄漏
+Node对内存泄漏十分敏感，一旦线上应用有成千上万的流量，哪怕是一个字节的内存泄漏也会造成堆积，辣鸡回收过程中将会耗费更多时间进行对象扫描，应用响应缓慢，直到进程内存溢出，应用崩溃。<br>
+内存泄漏：应当回收的对象出现意外而没有被回收，变成了常驻在老生代中的对象。<br>
+* 缓存
+* 队列消费不及时
+* 作用域未释放
+#### 慎将内存当作缓存
+一旦一个对象被当做缓存来使用，那就意味着它将会常驻在老生代中。缓存中存储的键越多，长期存活的对象也就越多，这将导致辣鸡回收在进行扫描和整理时，对这些对象做无用功。<br>
+js开发者通常喜欢用对象的键值对来缓存东西，但这与严格意义上的缓存又有着区别，严格意义的缓存有着完善的过期策略，而普通对象的键值对并没有。<br>
+如下代码所示：
+```js
+var cache = {};
+var get = function(key){
+    if(cache[key]){
+        return cache[key];
+    }else{
+    }
+};
+var set = function(key,value){
+    cache[key] = value;
+};
+```
+这个利用了js对象创建一个缓存对象，但是受辣鸡回收机制的影响。只能小量使用。全局变量太多！！！内存无限制增长！所以在Node中，任何试图拿内存当缓存的行为都应当被限制。当然，这种限制并不是不允许你使用，就是要你小心。
+##### 缓存限制策略
+为了解决缓存中的对象永远无法释放的问题，需要加入一种策略来限制缓存的无限增长。
+```js
+var limitableMap = function(limit){
+  this.limit = limit || 10;
+  this.map = {}; // 缓存
+  this.keys = []; // 内存
+};
+var hasOwnProperty = Object.prototype.hasOwnProperty;
+limitableMap.prototype.set = function(key,value){
+  var map = this.map;
+  var keys = this.keys;
+  if(!hasOwnProperty.call(map,key)){
+    if(keys.length === this.limit){
+      var firstkey = keys.shift();
+      delete map[firstkey];
+    }
+    keys.push(key);
+  }
+  map[key] = value;
+};
+LimitableMap.prototype.get = function(key){
+  return this.map[key];
+};
+module.exports = LimitableMap;
+```
+记录键在数组中，一旦超过数量，就以先进显出的方式进行淘汰。<br>
+模块机制，为了加速模块的引入，所有模块都会通过编译执行，然后被缓存起来。由于通过exprots导出的函数，可以访问文件模块中的私有变量，这样每个文件模块在编译执行后形成的作用域因为模块缓存的原因，不会被释放。<br>
+举个🌰
+```js
+(function(exports,require,module,__filename,__dirname){
+  var local = "letvarible";
+  exports.get = function(){
+    return local;
+  };
+});
+```
+由于模块的缓存机制，模块是常驻老生代的。在设计模块时，要十分注意内存泄漏的出现。<br>
+举个🌰
+```js
+var lekArray = [];
+exports.leak = function(){
+  leakArray.push("leak"+Math.random());
+};
+```
+这里每次调用leak()方法时，都导致局部变量leakArray不停增加内存的占用，且不被释放。如果模块要这么设计，请添加清空队列的相应接口，以供调用者释放内存。<br>
+##### 缓存的解决方案
+直接将内存作为缓存的方案要十分慎重。除了限制缓存的大小外，另外要考虑的事情是，进程之间是无法共享内存。如果在进程内使用缓存，这些缓存不可避免地有重复，对物理内存的使用是一种浪费。<br>
+采用进程外的缓存，是解决使用大量缓存的方案，进程自身不存储状态。<br>
+**外部的缓存软件**<br>
+* 将缓存转移到外部，减少常驻内存的对象的数量，让垃圾回收更高效。
+* 进程之间可以共享缓存。
+#### 关注队列状态
+另一个不经意产生的内存泄漏是队列。在js中可以通过队列（数组对象）来完成许多特殊的需求，比如Bagpipe。队列在消费者-生产者模型中经常充当中间产物。这是一个容易忽略的情况，因为大多数应用场景下，消费的速度远远大于生产速度，内存泄漏不易产生。但是一旦反过来，低于了，就会形成堆积。<br>
+* 深度解决方案是监控队列的长度，一旦堆积，应当通过监控系统产生警报并通知相关人员。<br>
+* 另一种解决方案是任意异步调用都应该包含超时机制，一旦在限定的时间内未完成相应，通过毁掉函数传递超时异常，使得任意异步调用的回调都具备可控的相应时间，给消费速度一个下限值。<br>
+* 两种模式，超时和拒绝模式。两种模式都有效防止队列拥塞导致内存泄漏的问题<br>
+### 内存泄漏排查
+在Node中，由于V8的堆内存大小的限制，它对内存泄漏非常敏感。下面有几个排查方案<br>
+排查内存泄漏的原因主要通过对堆内存进行分析而找到<br>
+🙆 v8-profiler<br>
+🙆‍♂️ node-heapdump<br>
+🙆‍♂️ node-mtrace <br>
+🙆 dtrace<br>
+🙆‍♂️ node-memwatch<br>
+### 大内存应用
+在Node中，不可避免地还是会存在操作大文件的场景。由于node的内存限制，操作大文件也需要小心，好在Node提供了stream模块用于处理大文件。<br>
+stream模块是Node的原生模块，直接引用即可<br>
+stream继承EventEmitter，具备基本的自定义事件功能，同时抽象出标准的事件和方法。它分为可读和可写两种。Node中的大多数模块都有stream的应用。🌰 fs的createReadStream()和createWriteStream()方法可以分别用于创建文件的可读流和可写流，process stdin和stdout<br>
+通过fs的createReadStream()和createWriteStream()方法来进行大文件的操作
+```js
+var reader = fs.createReadStream('in.txt');
+var writer = fs.createWriteStream('out.txt');
+reader.on('data',function(chunk){
+  writer.write(chunk);
+});
+reader.on('end',function(){
+  writer.end();
+});
+```
+```js
+var reader = fs.createReadStream('in.txt');
+var writer = fs.createWriterStream('out.txt');
+reader.pipe(writer);
+```
+可读流提供了管道方法pipe()，封装了data事件和写入操作。
+### 最后
+Node将js的主要饮用场景扩展到服务器端，相应要考虑的细节也与浏览器不同，需要更严谨地为每一份资源作出安排。总的来说，内存在Node中不能随心所欲地使用，但也不是完全不擅长。
