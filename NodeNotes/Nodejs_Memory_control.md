@@ -61,6 +61,119 @@ Mark-Sweep是标记清楚的意思，它分为标记和清除两个阶段。与S
 与Scavenge复制活着的对象不同，Mark-Sweep在标记阶段遍历堆中所有对象，并标记活着的对象，在随后的清除阶段中，只清除没有被标记的对象。<br>
 可以看出，Scavenge只复制活着的对象，而Mark-sweep只清理死亡对象。活对象在新生代中只占小部分，死亡对象在老生代中只占小部分，这就是两种回收方式能高效处理的原因。<br>
 Mark-Sweep清除后，内存空间会出现不连续的状态。这种内存碎片会对后续的内存分配造成问题，因为很可能出现需要分配一个大对象的情况，这时所有的碎片空间都无法完成此次分配，就会提前触发辣鸡回收，而这次回收是不必要的。<br>
-所以为了解决上面所说的问题，提出了Mark-Compact。
-
-
+所以为了解决上面所说的问题，提出了Mark-Compact。<br>
+* Mark-Compact是标记整理的意思，是在Mark-Sweep的基础上演变而来的。它们的差别在于对象在标记死亡后，在整理的过程中，将或者的对象往一端移动，移动完成后，直接清理掉边界外的内存。完成移动后，就可以直接清除最右边的存活对象后面的内存区域完成回收。<br>
+* Incremental Marking
+垃圾回收会将应用逻辑暂停下来，待执行完垃圾回收后再恢复执行引用逻辑，这种行为被称为“全停顿”。为了降低全堆垃圾回收带来的停顿时间，V8从标记阶段入手，将原本要一口气停顿完成的动作改为 **增量标记（incremental Marking）**。<br>
+辣鸡回收与应用逻辑交替执行直到标记阶段完成。<br>
+V8后续还引入了延迟清理与增量式整理（incremental compaction），让清理与整理动作也变成增量式的。同时还计划引入并行标记与并行清理，进一步利用多核性能降低每次停顿的时间。<br>
+##### 2.小结
+从V8的自动辣鸡回收机制的设计角度看到，V8对内存使用进行限制的缘由。新生代设计为一个较小的内存空间是合理的，而老生代空间过大对于辣鸡回收并无特别意义。V8对内存限制的设置对于Chrome浏览器这种每个选项卡页面使用一个V8实例而言，内存的使用是绰绰有余的。对于Node编写的服务器端来说，内存限制也并不影响正常场景下的使用。但是对于V8的辣鸡回收特点和JavaScript在单线程上的执行情况，辣鸡回收是影响性能的因素之一。想要高性能的执行效率，需要注意让辣鸡回收尽量少地进行，尤其是全堆垃圾回收。<br>
+### 高效使用内存
+在V8面前，开发者所要具备的责任是如何让辣鸡回收机制更高效地工作。<br>
+#### 作用域
+提到如何出发辣鸡回收，第一个要介绍的是作用域（scope）。在JS中能行程作用域的有函数调用、with以及全局作用域。<br>
+```js
+var foo = function(){
+  var local = {};
+};
+```
+在这个示例中，由于对象非常小，将会分配在新生代中的From空间中。在作用域释放后，局部变量local失效，其引用的对象将会在下次辣鸡回收时被释放。<br>
+##### 1.标识符查找
+与作用域相关的即是标识符查找。所谓标识符，可以理解为变量名。在下面的代码中，执行bar()函数时，将会遇到local变量。 （这里解释的作用域一般是冒泡查找）
+```js
+var bar = function(){
+  console.log(local);
+};
+```
+##### 2.作用域链
+```js
+var foo = function(){
+  var local = 'local var';
+  var bar = function(){
+    var local = "another var";
+    var baz = function(){
+      console.log(local);
+    };
+    baz();
+  };
+  bar();
+};
+foo();
+```
+输出 another var<br>
+##### 3.变量的主动释放
+如果变量是全局变量（不通过var声明或定义在global变量上），由于全局作用域需要直到进程退出才能释放，此时将导致引用的对象常驻内存（常驻在老生代中）。如果需要释放常驻内存的对象，可以通过delete操作来删除引用关系。或者将变量重新赋值，让旧的对象脱离引用关系。在接下来的老生代内存清除和整理的过程中，会被回收释放。
+```js
+global.foo = "i am global object";
+console.log(global.foo);
+delete global.foo;
+global.foo = undefined;
+console.log(global.foo);
+```
+如果在非全局作用域中，想主动释放变量引用的对象，也可以通过这样的方式。虽然delete操作和重新赋值具有相同的效果，但是V8中通过delete删除对象的属性有可能干扰V8的优化，所以赋值方式解除引用会更好。<br>
+#### 闭包?
+在js中，实现外部作用域访问内部作用域中变量的方法叫做闭包（closure）。这得益于高阶函数的特性：函数可以作为参数或者返回值
+```js
+var foo = function(){
+  var bar = function(){
+    var local = "insert";
+    return function(){
+      return local;
+    };
+  };
+  var baz = bar();
+  console.log(baz());
+};
+```
+#### 小结
+在正常的js执行中，无法立即回收的内存有闭包和全局变量引用这两种情况。由于V8的内存限制，要十分小心此类变量是否无限制地增加，因为他会导致老生代中的对象增多。<br>
+### 内存指标
+一般而言，应用中存在一些全局性的对象是正常的，而且在正常使用中，变量都会自动释放回收。但是也会存在一些我们认为会回收但是却没有被回收的对象，这会导致内存占用无限增长。一旦增长达到V8的内存限制，将会得到内存溢出错误，进而导致进程推出。<br>
+#### 查看内存使用情况
+`process.memoryUsage()`;<br>
+```js
+bogon:~ mrtrans$ node
+> process.memoryUsage
+[Function: memoryUsage]
+> process.memoryUsage()
+{ rss: 21843968,
+  heapTotal: 7684096,
+  heapUsed: 5055272,
+  external: 8782 }
+> 
+```
+rss是resident set size的缩写，即进程的常驻内存部分。进程的内存总共有几部分，一部分是rss，其余部分在交换区（swap）或者文件系统（filesystem）。<br>
+除了rss外，heapTotal和heapUsed对应的是V8的堆内存信息。heapTotal是堆中总共申请的内存量，heapUsed表示目前堆中使用中的内存量。这三个值的单位都是字节。<br>
+```js
+var showMem = function(){
+  var mem = process.memoryUsage();
+  var format = function(byytes){
+    ...
+  }
+  ...
+}
+```
+##### 查看系统的内存占用
+```js
+> os.totalmem()
+8589934592
+> os.freemem()
+331943936
+```
+#### 堆外内存
+堆中的内存用量总是小于进程的常驻内存用量，这意味着Node中的内存使用并非都是通过V8进行分配的。我们将那些不是通过V8分配的内存称为堆外内存。<br>
+实现
+```js
+var useMem = function(){
+  var size = 200*1024*1024;
+  var buffer = new Buffer(size);
+  for(var i = 0;i<size;i++){
+    buffer[i] = 0;
+  }
+  return buffer;
+};
+```
+#### 小结
+Node的内存构成主要由通过V8进行分配的部分和Node自行分配的部分。受V8的垃圾回收限制的主要是V8的堆内存。
+### 内存泄漏
