@@ -2,6 +2,7 @@
 #include <string>
 #include <stdexcept>
 #include <initializer_list>
+#include "simpleCode.h"
 using std::cin;
 using std::cout;
 using std::endl;
@@ -11,15 +12,15 @@ using namespace std;
 extern int i; // 仅声明
 const int j = 90;
 int getNumber(const string &s);
-struct Sales_data
-{
-  string isbn() const { return bookNo; };
-  Sales_data& combine(const Sales_data&);
-  double avg_price() const;
-  unsigned units_sold = 10;
-  double revenue = 0.0;
-  string bookNo;
-};
+// struct Sales_data
+// {
+//   string isbn() const { return bookNo; };
+//   Sales_data& combine(const Sales_data&);
+//   double avg_price() const;
+//   unsigned units_sold = 10;
+//   double revenue = 0.0;
+//   string bookNo;
+// };
 size_t count_calls()
 {
   static size_t ctr = 0;
@@ -86,9 +87,10 @@ int main()
   // cout << attPtr(4)(4) << endl;
   cout << new_size() <<endl;
   error_msg({"funcationx", "okey", "yes"});
-
   int arr[10];
   int(*p2)[10] = &arr;
+  Sales_data deleConstr;
+  cout << deleConstr.bookNo << endl;
   // int sum,value = 0;
   // int i = 42;
   // int *p;

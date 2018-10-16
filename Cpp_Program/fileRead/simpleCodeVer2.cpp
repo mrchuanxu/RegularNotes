@@ -21,7 +21,9 @@ Sales_data add(const Sales_data &lhs, const Sales_data &rhs){
 }
 int main(){
   Sales_data total,trans;
-
+  read(cin,total);
+  print(cout,total);
+  print(cout,trans);
   return 0;
 }
 

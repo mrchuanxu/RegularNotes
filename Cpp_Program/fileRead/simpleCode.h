@@ -10,13 +10,14 @@ class Sales_data
   friend istream &read(istream&,Sales_data&);
   friend ostream &print(ostream&,Sales_data&);
 public:
-  Sales_data() = default;
-  Sales_data(const string &s) : bookNo(s) {}
+   // Sales_data(const string &s) : bookNo(s) {}
   Sales_data(const string &s, unsigned n, double p) : bookNo(s), units_sold(n), revenue(p * n) {}
-  Sales_data(istream &);
+  Sales_data():Sales_data("#####",0,0){};
+  // Sales_data(istream &is):Sales_data(){read(is,*this);};
   string isbn() const { return this->bookNo; };
   Sales_data &combine(const Sales_data &);
-
+  explicit Sales_data(const string &s):bookNo(s){}
+  explicit Sales_data(istream&);
 private:
   double avg_price() const { return units_sold ? revenue / units_sold : 0; };
   unsigned units_sold = 10;
