@@ -1,6 +1,7 @@
 #include "simpleCode.h"
 #include <iostream>
 #include <string>
+#include <fstream>
 
 istream &read(istream &is, Sales_data &item){
   double price = 0;
@@ -21,9 +22,12 @@ Sales_data add(const Sales_data &lhs, const Sales_data &rhs){
 }
 int main(){
   Sales_data total,trans;
-  read(cin,total);
-  print(cout,total);
-  print(cout,trans);
+  ofstream out("./sales_record.txt");
+
+
+  // read(cin,total);
+  // print(cout,total);
+  // print(cout,trans);
   return 0;
 }
 
