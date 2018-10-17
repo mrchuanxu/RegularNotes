@@ -112,7 +112,6 @@ int *&r = p;//r是一个对指针p的引用<br>
 r=&i;//r 引用了一个指针，因此给r赋值&i就是令p指向i<br>
 *r = 0;//解引用得到i。也就是p指向的对象，将i的值改为0
 ```
-<br>
 ## const限定符
 有时候，我们希望定义这样一种变量，它的值不能改变。<br>
 const int bufSize = 512<br>
@@ -142,8 +141,10 @@ const int &r3 = r1 *2;// 这个就是表达式
 对const的引用可能引用一个并非const的对象<br>
 **指针与const**<br>
 其实与引用一样，也可以令指针指向常量或非常量。类似于常量引用，指向常量的指针 不能用于改变其所指对象的值。<br>
-const double pi = 3.14;<br>
-const double *ptr = &pi;<br>
+```cpp
+const double pi = 3.14;
+const double *ptr = &pi;
+```
 一个例外情况，允许另一个指向常量的指针指向一个非常量对象：<br>
 double dval = 3.14;<br>
 ptr = &dval;(这里记住是指向！指向的是常量！）<br>
@@ -238,9 +239,9 @@ string s("hello world");
 for(auto &c : s)
     c = toupper(c);
 cout<< s << endl;
-```cpp
-使用下标执行迭代<br>
 ```
+使用下标执行迭代<br>
+```cpp
 for(decltype(s.size()) index = 0; index != s.size() && !isspace(s[index]); ++index)
       s[index] = toupper(s[index])
 ```
@@ -270,7 +271,6 @@ vector<T> v5 {a,b,c,d...}
 vector<T> v5 = {a,b,c,d,e,f...}
 ```
 向vector对象中添加元素<br>
-<br>
 ```cpp
 vector <int> v2;
 for(int i = 0;i!=100;++i)
@@ -306,7 +306,7 @@ if(s.begin() != s.end()){
     *it = toupper(*it);
 }
 ```
-将迭代器从一个元素移动到另外一个元素 523<br><br>
+将迭代器从一个元素移动到另外一个元素 523<br>
 迭代器使用递增运算符来从一个元素移动到下一个元素<br>
 ```cpp
 for(auto it = s.begin(); it != s.end()&&!isspace(*it);++it)
@@ -375,7 +375,7 @@ int *(&array)[10] = ptrs; //array是数组的引用，该数组含有10个指针
 要想理解数组声明的含义，最好的办法就是从数组的名字开始按照由内向外的顺序阅读<br>
 **访问数组元素**<br>
 使用数组下标的时候，通常定义为size_t类型。size_t是一种机器相关的无符号类型，他被设计得足够大以便能表示内存中任意对象的大小。<br>
-**指针和数组**
+**指针和数组**<br>
 通常情况下，使用取地址符来获取指向某个对象的指针，取地址符可以用于任何对象。<br>
 ```cpp
 string nums[] = {"one","two","three"};
@@ -395,7 +395,7 @@ strlen(p) 返回p的长度，空字符串不计算在内<br>
 strcmp(p1,p2) 比较p1 和p2的相等性，如果p1 == p2，返回0；如果p1 > p2，返回一个正值； 如果p1<p2，返回一个负值<br>
 strcat(p1,p2) 将p2附加到p1之后，返回p1<br>
 strcpy(p1,p2) 将p2拷贝给p1，返回p1<br>
-**指针和多维数组**
+**指针和多维数组**<br>
 当程序使用多维数组的名字时，也会自动将其转换成指向数组首元素的指针<br>
 ```cpp
 int ia[3][4]; //大小为3的数组，每个元素是含有4个整数的数组

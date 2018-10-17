@@ -39,9 +39,11 @@ int main()
     }
   }
   ifiles.close();
-  cin.tie(&cout);
-  ostream *old_tie = cin.tie(nullptr);
-  cin.tie(&cerr);
-  cin.tie(old_tie);
+  // cin.tie(&cout);
+  // ostream *old_tie = cin.tie(nullptr);
+  // cin.tie(&cerr);
+  // cin.tie(old_tie);
+  int timeout;
+  cout << timeout << endl;
   return 0;
 }
