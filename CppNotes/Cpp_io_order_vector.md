@@ -386,11 +386,11 @@ array<int,10> ia1;
 array<int, 10> ia2 = {0,1,2,3,4,5,6,7,8,9};
 array<int,10> ia3 = {42};
 ```
-值得注意的是，虽然我们不能对内置数组类型进行拷贝或对象赋值操作，但array并无此限制<br>
+⚠️ 虽然我们不能对内置数组类型进行拷贝或对象赋值操作，但array并无此限制<br>
 ```cpp
 int digs[10] = {1,2,3,4,5,6,7,8,9,0};
 int cpy[10] = digs; //错误，内置数组不支持拷贝或赋值
-array<int,10> digits = [1,2,3,4,5,6,7,8,9,0};
+array<int,10> digits = {1,2,3,4,5,6,7,8,9,0};
 array<int,10> copy = digits; //正确： 只要数组类型匹配即合法
 ```
 @大小是array类型的一部分<br>
@@ -469,12 +469,12 @@ swap(svec1,svec2);
 ```cpp
 list<const char *> lst(10,'h');
 vector<string> vec;
-vec.assign(lst.cbegin(),lst.end());
+vec.assign(lst.cbegin(),lst.cend());
 ```
 ### 容器大小操作
 size 返回容器中元素的数目<br>
 empty 返回布尔值<br>
-maz_size返回一个大于或等于该类型容器所能容纳的最大元素数的值<br>
+max_size返回一个大于或等于该类型容器所能容纳的最大元素数的值<br>
 forward_list 支持max_size 和empty，但不支持size<br>
 
 ### 关系运算符
@@ -499,8 +499,8 @@ cout << (vector<int>(li.begin(), li.end()) == vec3 ? "true" : "false") << endl;
 
 除了array外，所有标准库容器都提供灵活的内存管理。在运行时可以动态添加或删除元素来改变容器大小。<br>
 array不支持这些操作<br>
-forward_list 有自己专有版本的insert和emplace，不支持push_back和emplace_back<br>
-vector 和 string不支持push_front和emplace_front<br>
+forward_list 有自己专有版本的insert和emplace， **不支持push_back和emplace_back**<br>
+**vector 和 string不支持push_front和emplace_front**<br>
 c.push_back(a);<br>
 c.emplace_back(a);<br>
 c.push_front(a);<br>
@@ -515,10 +515,10 @@ c.insert(p,il) il是一个花括号包围的元素值列表。将这些给定值
 @向一个vector，string或deque 插入元素会使所有指向容器的迭代器、引用和指针失效。<br>
 ### 删除元素
 顺序容器的删除操作<br>
-这些操作会改变容器的大小，所以不使用与array<br>
+这些操作会改变容器的大小，所以不使用于array<br>
 forward_list 有特殊版本的erase<br>
 forward_list 不支持pop_back；vector和string不支持pop_front<br>
-c.pop_back(); c.pop_front(); c.erase(p)//删除迭代器p所指定的元素，返回一个指向被删元素之后元素的迭代器，若p指向尾元素，则返回为后off-the-end迭代器。若p是尾后迭代器。若p是尾后迭代器，则函数行为未定义<br>
+c.pop_back(); c.pop_front(); c.erase(p)//删除迭代器p所指定的元素，返回一个指向被删元素之后元素的迭代器，若p指向尾元素，则返回为后off-the-end迭代器。若p是尾后迭代器，则函数行为未定义<br>
 
 c.erase(b,e) //返回一个指向最后一个被删元素之后元素的迭代器，若e本身就是尾后迭代器，则函数也返回尾后迭代器。<br>
 c.clear() //删除c中的所有元素，返回void<br>
