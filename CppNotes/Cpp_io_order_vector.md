@@ -467,7 +467,7 @@ swap(svec1,svec2);
 元素不会被移动的事实意味着，除string外，指向容器的迭代器、引用和指针在swap操作之后都不会失效。他们仍指向swap操作之前所指向的那些元素
 @与其他容器不同，swap两个array会真正交换他们的元素。<br>
 ```cpp
-list<const char *> lst(10,'h');
+list<const char *> lst(10,"h");
 vector<string> vec;
 vec.assign(lst.cbegin(),lst.cend());
 ```
