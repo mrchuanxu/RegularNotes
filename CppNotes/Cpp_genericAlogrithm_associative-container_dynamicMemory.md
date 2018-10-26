@@ -1,5 +1,5 @@
 # Cpp 范型算法，关联容器以及动态内存
-**上集讲到，顺序容器，io库，标准库容器是模板类型，用来保存给定类型的对象，** 在一个顺序同期中，元素都是按顺序存放的，通过位置来访问。<br>
+**上集讲到，顺序容器，io库，标准库容器是模板类型，用来保存给定类型的对象，** 在一个顺序容器中，元素都是按顺序存放的，通过位置来访问。<br>
 顺序容器有公共的标准接口：如果两个顺序容器都是提供一个特定的操作，那么这个操作在两个容器中具有相同的接口和含义。所有容器除了array，都提供高效的动态内存管理。<br>
 这集，我们来讲泛型算法，关联容器，动态内存，概念及运用！<nr>
 标准库容器定义的操作集合惊人的小！标准库并未给每个容器添加大量的功能，而是提供了一组算法，这些算法中大多数独立于任何特定的容器。这些算法是通用的或者说是泛型，它们可用于不同类型的容器和不同类型的元素<br>
@@ -763,8 +763,8 @@ c.reverse(n)  重组存储，使得c可以保存n个元素不必rehash<br>
 @ **静态内存**用来保存局部static对象、类static数据成员以及定义在任何函数之外的变量。<br>
 @ **栈内存**用来保存定义在函数内的非static对象<br>
 @ **分配在静态或栈内存中的对象由编译器自动创建和销毁**<br>
-@ 对于栈对象，仅在其定义的程序块运行时才存在
-@ **static对象**在使用之前分配，在程序结束时销毁
+@ 对于栈对象，仅在其定义的程序块运行时才存在<br>
+@ **static对象**在使用之前分配，在程序结束时销毁<br>
 除了静态内存和栈内存，每个程序还拥有一个内存池。这部分内存被称作自由空间（free store）或堆（heap）。程序用堆来存储动态分配的对象---即，那些在程序运行时分配的对象<br>
 动态对象的生存期由程序来控制，也就是说，当动态对象不再使用时，我们的代码必须显式地销毁它们<br>
 
@@ -1049,7 +1049,7 @@ p.reset(new string(*p));
 如果使用智能指针，即使程序块过早结束，智能指针类也能确保在内存不再需要时，将其释放<br>
 ```cpp
 void f(){
-    shared_ptr<int> sp(new in(42)); 
+    shared_ptr<int> sp(new int(42)); 
    // 分配一个新对象
    // 这段代码抛出一个异常，且在f中未捕获
 }//在函数结束时shared_ptr自动释放内存
@@ -1241,90 +1241,118 @@ class StrBlob{
     friend class StrBlobPtr;
 //返回指向首元素和尾后元素的StrBlobPtr
     StrBlobPtr begin() {return StrBlobPtr(*this);}
-    StrBlobPtr end(){ auto ret = StrBlobPtr(*this, data-<size());  return ret;}
+    StrBlobPtr end(){ auto ret = StrBlobPtr(*this, data->size());  return ret;}
 };
 ```
 编写程序，逐行读入一个输入文件，将内容存入一个StrBlob中，用一个StrBlobPtr打印出StrBlob中的每个元素
 ```cpp
 #include <iostream>
+#include "StrBlobPtr.h"
+#include "StrBlob.h"
 #include <fstream>
-#include "strblob.h"
+using namespace std;
 
 int main(){
-    ifstream ifs("filepath");
-    StrBlob sb;
-    string s;
-    while(getline(ifs,s)){
-        sb.push_back(s);
-    }
-    for (StrBlobPtr sbp = sb.begin(); sbp != sb.end();sbp.incr()){
-        cout << sbp.deref() <<endl;
-    }
-    return 0;
+  ifstream ifs("./phone.txt");
+  StrBlob sb;
+  string s;
+  while(getline(ifs,s)){
+    sb.push_back(s);
+  }
+  for(StrBlobPtr sbp = sb.begin();sbp != sb.end();sbp.incr()){
+    cout << sbp.deref() << endl;
+  }
+  return 0;
 }
-
-strblob.h
-#ifndef EX12_19_H
-#define EX12_19_H
+// StrBlob.h
+#ifndef STRBLOB_H
+#define STRBLOB_H
+#include <iostream>
 #include <string>
 #include <vector>
 #include <initializer_list>
-#include <memory>
-#include <stdexcept>
 using namespace std;
-class StrBlobPtr;
+class StrBlobPtr; // 引用需要前向声明方可使用
 class StrBlob{
-public:
-    using size_type = vector<string>::size_type;
-    friend class StrBlobPtr;
-    StrBlobPtr begin();
-    StrBlobPtr end();
-    StrBlob():data(make_shared<vector<string>>()){}
-    size_type size() const { return data->size();}
-    bool empty() const { return data->empty();}
-
-    void push_back(const string& s){ data -> push_back(s);}
-    void pop_back(){ check(0,"pop_back on empty StrBlob"); data->pop_back();}
-    string& front(){}
-    string& back(){}
-    const string& front() const{}
-    const string& back() const{}
-private:
-    void check(size_type i, const string& msg) const{
-                if(i >= data->size())
-                         throw out_of_range(msg);
-    };
-class StrBlobPtr{
-public:
-     StrBlobPtr():curr(0){}
-     StrBlobPtr(StrBlob &a,size_t sz = 0):wptr(a.data),curr(sz){}
-     bool operator != (const StrBlobPtr& p){ return p.curr != curr;}
-     string& deref() const{
-               auto p = check(curr, "dereference past end");
-               return (*p)[curr];
-      }
-      StrBlobPtr& incr(){
-               check(curr,"increment past end of StrBlobPtr");
-               ++curr;
-               return *this;
-      }
-private:
-     shared_ptr<vector<string>> check(size_t i, const string &msg) const{
-       auto ret = wptr.lock();
-       if(!ret) throw runtime_error("unbound StrBlobPtr");
-       if(i>=ret->size()) throw out_of_range(msg);
-       return ret;
-       }
-      weak_ptr<vector<string>> wptr;
-      size_t curr;
+  public:
+      friend class StrBlobPtr;
+      typedef vector<string>::size_type s_t;
+      StrBlobPtr begin();
+      StrBlobPtr end();
+      StrBlob(initializer_list<string> li);
+      StrBlob():data(make_shared<vector<string> >()){}
+      s_t size() const { return data->size(); }
+      bool empty() const { return data->empty();}
+      void push_back(const string &t){ data->push_back(t);}
+      void pop_back();
+      string &front();
+      string &back();
+  private:
+      shared_ptr<vector<string>> data;
+      void check(s_t i,const string &msg) const;
 };
-StrBlobPtr StrBlob::begin(){
-      return StrBlobPtr(*this);
+
+// StrBlob::StrBlob():data(make_shared<vector<string>>()){}
+StrBlob::StrBlob(initializer_list<string> il):data(make_shared<vector<string>>(il)){}
+void StrBlob::check(s_t i,const string &msg) const{
+  if(i >= data->size())
+      throw out_of_range(msg);
 }
-StrBlobPtr StrBlob::end(){
-     return StrBlobPtr(*this,data->size());
+
+string &StrBlob::front(){
+  check(0,"front on empty StrBlob");
+  return data->front();
+}
+
+string &StrBlob::back(){
+  check(0,"back on empty StrBlob");
+  return data->back();
+}
+void StrBlob::pop_back(){
+  check(0,"pop_back on empty StrBlob");
+  return data->pop_back();
 }
 #endif
+
+// StrBlobPtr.h
+#ifndef STRBLOBPTR_H
+#define STRBLOBPTR_H
+#include <iostream>
+#include <string>
+#include <vector>
+#include <memory>
+#include "StrBlob.h" // 引入之后不用前向声明
+using namespace std;
+class StrBlobPtr{
+  public:
+      StrBlobPtr():curr(0){}
+      StrBlobPtr(StrBlob &a,size_t sz = 0):wptr(a.data),curr(sz){}
+      bool operator != (const StrBlobPtr& p){ return p.curr != curr;}
+      string& deref() const{
+        auto p = check(curr,"deference past end");
+        return (*p)[curr];
+      }
+      StrBlobPtr& incr(){
+        check(curr,"increment past end of StrBlobPtr");
+        ++curr;
+        return *this;
+      }
+  private:
+      weak_ptr<vector<string> > wptr;
+      shared_ptr<vector<string> > check(size_t i, const string &msg) const{
+        auto ret = wptr.lock();
+        if(!ret)
+            throw runtime_error("unbound StrBlobPtr");
+        if(i>=ret->size())
+            throw out_of_range(msg);
+        return ret;
+      }
+      size_t curr;
+};
+StrBlobPtr StrBlob::begin(){ return StrBlobPtr(*this);}
+StrBlobPtr StrBlob::end(){ return StrBlobPtr(*this,data->size()); }
+#endif
+
 ```
 ### 动态数组
 **new 和 delete 运算符一次分配/释放一个对象** ，但某些应用需要一次为很多对象分配内存的功能。例如vector和string 都是在连续内存中保存它们的元素，因此，当容器需要重新分配内存时，必须一次性为很多元素分配内存。<br>
@@ -1385,7 +1413,7 @@ delete [] pa; //pa必须指向一个动态分配的数组或为空
 #### 智能指针和动态数组
 标准库提供了一个可以管理new分配的数组的unique_ptr版本。为了用一个unique_ptr管理动态数组，我们必须在对象类型后面跟一对空括号：<br>
 ```cpp
-uniqur_ptr<int[]> up(new int[10]); //up指向一个包含10个为初始化int的数组
+unique_ptr<int[]> up(new int[10]); //up指向一个包含10个为初始化int的数组
 up.release(); //自动用delete[]销毁其指针
 ```
 类型说明符中的方括号（<int[]>)指出up指向一个int数组而不是一个int。由于up指向一个数组，当up销毁他管理的指针时，会自动使用delete[]<br>
@@ -1459,8 +1487,8 @@ auto const p = alloc.allocate(n);  //分配n个未初始化的string
 这个allocate调用为n个string分配了内存<br>
 `allocator<T> a ` 定义了一个名为a的allocator对象，他可以为类型为T的对象分配内存<br>
 `a.allocator(n)`  分配一段原始的，未构造的内存，保存n个类型为T的对象<br>
-`a.deallocate(p,n)` 释放从T*指针p中的地址开始的内存，这块内存保存了n个类型为T的对象；p必须是一个先前由allocate返回的指针，且n必须是p穿件时所要求的大小。在调用deallocatr之前，用户必须对每个在这块内存中创建的对象调用destory<br>
-`a.construct(p,args)` p必须是一个类型为T*的指针，指向一块原始内存：arg被传递给类型为T的构造函数，用来在p指向的内存中构造一个对象<br>
+`a.deallocate(p,n)` 释放从T* 指针p中的地址开始的内存，这块内存保存了n个类型为T的对象；p必须是一个先前由allocate返回的指针，且n必须是p穿件时所要求的大小。在调用deallocatr之前，用户必须对每个在这块内存中创建的对象调用destory<br>
+`a.construct(p,args)` p必须是一个类型为T* 的指针，指向一块原始内存：arg被传递给类型为T的构造函数，用来在p指向的内存中构造一个对象<br>
 `a.destory(p)`  p为T* 类型的指针，此算法对p指向的对象执行析构函数<br>
 allocator分配未构造的内存<br>
 
@@ -1471,7 +1499,7 @@ alloc.construct(q++); //*q未空字符串
 alloc.construct(q++,10,'c'); //*q 为cccccccccc
 alloc.construct(q++,"hi"); // *q为hi
 ```
-⚠️ **为了使用allocate返回的内存，我们必须用construct构造对象。使用未构造的内存，其行为是为定义的**<br>
+⚠️ **为了使用allocate返回的内存，我们必须用construct构造对象。使用未构造的内存，其行为是未定义的**<br>
 当我们使用完对象后，必须对每个构造的元素调用destory来销毁它们。函数destory接受一个指针，对指向的对象执行析构函数<br>
 ```cpp
 while(q!=p)
