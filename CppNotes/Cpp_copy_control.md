@@ -849,7 +849,7 @@ StrVec::StrVec(const StrVec &s){
 	first_free = cap = newdata.second;
 }
 // 析构函数
-StrVec &StrVec(){free();}
+StrVec::~StrVec() { free(); }
 // 拷贝赋值运算符
 StrVec &StrVec::operator=(const StrVec &rhs){
 	// 调用alloc_n_copy分配内存，大小与rhs中元素占用空间一样多

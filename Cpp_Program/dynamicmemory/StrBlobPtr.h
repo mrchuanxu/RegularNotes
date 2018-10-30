@@ -20,6 +20,8 @@ class StrBlobPtr{
         ++curr;
         return *this;
       }
+      StrBlobPtr& operator++(int);
+      StrBlobPtr& operator--(int);
   private:
       weak_ptr<vector<string> > wptr;
       shared_ptr<vector<string> > check(size_t i, const string &msg) const{
@@ -34,4 +36,9 @@ class StrBlobPtr{
 };
 StrBlobPtr StrBlob::begin(){ return StrBlobPtr(*this);}
 StrBlobPtr StrBlob::end(){ return StrBlobPtr(*this,data->size()); }
+StrBlobPtr& StrBlobPtr::operator++(int){
+  check(curr,"increment past end of StrBlobPtr");
+  ++curr;
+  return *this;
+};
 #endif

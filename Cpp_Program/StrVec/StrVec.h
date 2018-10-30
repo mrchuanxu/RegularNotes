@@ -58,4 +58,33 @@ StrVec &StrVec::operator=(const StrVec &rhs){
   return *this;
 }
 
+void StrVec::reallocate(){
+  auto newcapacity = size()?2*size():1;
+  auto newdata = alloc.allocate(newcapacity);
+  // auto last = uninitialized_copy(make_move_iterator(begin()),make_move_iterator(end()),newdata);
+  // free();
+  // elements = newdata;
+  // first_free = last;
+  // cap = elements+newcapacity;
+  auto dest = newdata;
+  auto elem = elements;
+  for(size_t i = 0;i!=size();++i)
+      alloc.construct(dest++,move(*elem++));
+  free();
+  elements = newdata;
+  first_free = dest;
+  cap = elements+newcapacity;
+}
+
+StrVec &StrVec::operator=(StrVec &&rhs) noexcept{
+  if(this != &rhs){
+    free();
+    elements = rhs.elements;
+    first_free = rhs.first_free;
+    cap = rhs.cap;
+    rhs.elements = rhs.first_free = rhs.cap = nullptr;
+  }
+  return *this;
+}
+
 #endif STRVEC_H
