@@ -10,3 +10,7 @@ class Sales_data{
   public:
       Sales_data& operator+=(const Sales_data&);
 };
+
+ostream &operator<<(ostream &os,const Sales_data &item){
+
+}
