@@ -58,12 +58,12 @@ singleLink* insertHead(const string &s,singleLink *head){
 // 删除第n个元素
 bool delsingNode(singleLink *linkList,int n){
   int i = 0;
-  int j = n-1;
-  while(i<j && linkList){
+  int j = n;
+  while(i<n && linkList->next){
     linkList = linkList->next;
     ++i;
   }
-  if(linkList!= NULL){
+  if(linkList->next != NULL){
     linkList->next = linkList->next->next;
     return true;
   }else{
@@ -84,34 +84,46 @@ singleLink* searchNode(singleLink *linkList,int n){
   }
 }
 // 链表翻转
-singleLink* reveseLink(singleLink *linkList){
+singleLink* reveseLink(singleLink *linkList,singleLink *reveseNode){
   // 不要断链
-    auto tmp = linkList->next;
-    linkList->next = linkList;
-    if(tmp){
-      reveseLink(tmp);
+  // cout << "fuck" << endl;
+  // return linkList;
+    auto tmp = reveseNode->next;
+    reveseNode->next = NULL;
+    auto tmp1 = tmp->next;
+    tmp->next = reveseNode;
+    if(tmp1){
+      return reveseLink(tmp,tmp1);
+    }else{
+      return tmp;
     }
-
 }
 
 int main(){
   singleLink *head = new singleLink();
   head = initSingLinkList();
-  head = insertHead("ssobbb",head);
-  if(insertSingLinkNode('c',head,3)){
-    cout << "insert Success" << endl;
-  }else{
-    cout << "insert wrong" << endl;
+  head = insertHead("abcdefg",head);
+  // if(insertSingLinkNode('c',head,1)){
+  //   cout << "insert Success" << endl;
+  // }else{
+  //   cout << "insert wrong" << endl;
+  // }
+  // if(delsingNode(head,3)){
+  //   cout << "delete Success" << endl;
+  // }else{
+  //   cout << "delete wrong" << endl;
+  // }
+
+  // cout << "hello, world?" << endl;
+  singleLink *reveselink = new singleLink();
+  reveselink = reveseLink(reveselink,head);
+  while(reveselink){
+    cout << reveselink->ctr << endl;
+    reveselink = reveselink->next;
   }
-  if(delsingNode(head,2)){
-    cout << "delete Success" << endl;
-  }else{
-    cout << "delete wrong" << endl;
-  }
-  while(head){
-    cout << head->ctr << endl;
-    head = head->next;
-  }
-  cout << "hello, world?" << endl;
+  // while(head){
+  //   cout << head->ctr << endl;
+  //   head = head->next;
+  // }
   return 0;
 }

@@ -1,0 +1,23 @@
+<html>
+<body>
+<div>1</div>
+<div>2</div>
+<div>3</div>
+<div>4</div>
+<div>5</div>
+<div>6</div>
+</body>
+<script>
+var nodes = document.getElementsByTagName('div');
+for(var i = 0,len = nodes.length;i<len;i++){
+  (function(i){
+    nodes[i].onclick = function(){
+      console.log(i);
+    }
+  })(i) // 匿名函数，实现闭包
+  // nodes[i].onclick = function(){
+    // alert(i);
+  // }
+}
+</script>
+</html>
