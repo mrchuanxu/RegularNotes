@@ -89,13 +89,11 @@ singleLink* reveseLink(singleLink *linkList,singleLink *reveseNode){
   // cout << "fuck" << endl;
   // return linkList;
     auto tmp = reveseNode->next;
-    reveseNode->next = NULL;
-    auto tmp1 = tmp->next;
-    tmp->next = reveseNode;
-    if(tmp1){
-      return reveseLink(tmp,tmp1);
+    reveseNode->next = linkList;
+    if(tmp){
+      return reveseLink(reveseNode,tmp);
     }else{
-      return tmp;
+      return linkList;
     }
 }
 
