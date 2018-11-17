@@ -88,6 +88,7 @@ singleLink* reveseLink(singleLink *linkList,singleLink *reveseNode){
   // 不要断链
   // cout << "fuck" << endl;
   // return linkList;
+  // 考虑边界问题！
     auto tmp = reveseNode->next;
     reveseNode->next = linkList;
     if(tmp){
