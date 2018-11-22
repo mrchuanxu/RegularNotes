@@ -12,7 +12,10 @@ class singleLink{
       singleLink* next; // 指向下一个指针
       ~singleLink();
 };
-
+singleLink::~singleLink(){
+   ctr = NULL;
+   next = NULL;
+}
 // 初始化头节点
 singleLink* initSingleLink(){
   singleLink *head = new singleLink(); // 动态申请空间，堆内存
@@ -54,7 +57,7 @@ bool insertElement(singleLink *head, int n, data_type elem){
     if(n<0)
       return false;
     int i = 0;
-    while(i<n&&head->next){
+    while(i<n&&head->next){ // 假设没有合适的位置，直接在尾部插入
       head = head->next;
       i++;
     }
@@ -81,8 +84,10 @@ bool deleteElement(singleLink *head, int n){
 
 // 翻转链表
 singleLink* reverseLink(singleLink *head, singleLink *reveseNode){
-  if(head->next == NULL)
+  if(head == NULL)
       return head;
+  if(head->ctr == NULL)
+      head = head->next;
   auto tmp = head->next;
   head->next = reveseNode;
   if(tmp){
@@ -92,27 +97,76 @@ singleLink* reverseLink(singleLink *head, singleLink *reveseNode){
   }
 }
 // 检测回文字符串
-
+bool verifyPalindrome(singleLink *head,singleLink *mid){
+    bool isPalindrome = false;
+    if(head->ctr == NULL){
+      head = head->next;
+    }
+    while(mid){
+      if(mid->ctr != NULL){
+        if(mid->ctr == head->ctr){
+          isPalindrome = true;
+        }else{
+          isPalindrome = false;
+          break;
+        }
+        head = head->next;
+      }
+      mid = mid->next;
+    }
+  return isPalindrome;
+}
 // 快慢指针获取中间节点
-// singleLink* midleNode(singleLink *head){
-
-// }
+singleLink* midleNode(singleLink *head){
+  singleLink *ps; // 这里的声明在栈中，会在出了局部作用域自动销毁
+  singleLink *pf;
+  if(head->ctr == NULL){
+    head = head->next;
+  }
+  ps = pf = head;
+  while(pf->next){
+    if(pf->next->next){
+        ps = ps->next;
+        pf = pf->next->next;
+    }else{
+      break;
+    }
+  }
+  if(pf->next){
+    return ps->next;
+  }else{
+    return ps;
+  }
+    // delete ps;
+    // delete pf;
+}
 
 int main(){
   singleLink *head = new singleLink();
   head = initSingleLink();
-  head = insertRail(head,"abcdefg");
-  if(insertElement(head,4,'D')){
+  head = insertRail(head,"abcdedcba");
+  singleLink *mid = new singleLink();
+  mid = midleNode(head);
+
+  //if(insertElement(head,4,'D')){
   singleLink *reveseNode = new singleLink();
-  reveseNode = reverseLink(head,reveseNode);
-  while(reveseNode){
-    cout << reveseNode->ctr << endl;
-    reveseNode = reveseNode->next;
+  reveseNode = reverseLink(mid,reveseNode);
+  if(verifyPalindrome(head,reveseNode)){
+    cout << "yes,is palindrome" << endl;
+  }else{
+    cout << "nope, it is not" << endl;
   }
+  // while(reveseNode){
+  //   if(reveseNode->ctr!=NULL){
+
+  //   }
+  //   head = head->next;
+  //   reveseNode = reveseNode->next;
+  // }
   // while(head){
   //   cout << head->ctr << endl;
   //   head = head->next;
   // }
-  }
+  // }
   return 0;
 }
