@@ -54,7 +54,7 @@ bool insertElement(singleLink *head, int n, data_type elem){
     if(n<0)
       return false;
     int i = 0;
-    while(i<n){
+    while(i<n&&head->next){
       head = head->next;
       i++;
     }
@@ -70,7 +70,7 @@ bool deleteElement(singleLink *head, int n){
   if(n<0)
     return false;
   int i = 0;
-  while(i<n){
+  while(i<n && head){
     i++;
     head = head->next;
   }
@@ -85,7 +85,7 @@ singleLink* reverseLink(singleLink *head, singleLink *reveseNode){
       return head;
   auto tmp = head->next;
   head->next = reveseNode;
-  if(tmp->next){
+  if(tmp){
     return reverseLink(tmp,head);
   }else{
     return head;
@@ -94,9 +94,9 @@ singleLink* reverseLink(singleLink *head, singleLink *reveseNode){
 // 检测回文字符串
 
 // 快慢指针获取中间节点
-singleLink* midleNode(singleLink *head){
+// singleLink* midleNode(singleLink *head){
 
-}
+// }
 
 int main(){
   singleLink *head = new singleLink();
@@ -105,10 +105,14 @@ int main(){
   if(insertElement(head,4,'D')){
   singleLink *reveseNode = new singleLink();
   reveseNode = reverseLink(head,reveseNode);
-  while(reveseNode->next){
+  while(reveseNode){
     cout << reveseNode->ctr << endl;
     reveseNode = reveseNode->next;
   }
+  // while(head){
+  //   cout << head->ctr << endl;
+  //   head = head->next;
+  // }
   }
   return 0;
 }
