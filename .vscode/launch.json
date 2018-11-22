@@ -8,7 +8,7 @@
         "name": "(lldb) Attach",
         "type": "cppdbg",
         "request": "attach",
-        "program": "${workspaceFolder}/Algorithm/singleLink_Palindrome.out",
+        "program": "${workspaceFolder}/Algorithm/singleLinkOper/singleLinkOper.out",
         "processId": "${command:pickProcess}",
         "MIMode": "lldb"
       },
@@ -16,7 +16,7 @@
             "name": "(lldb) Launch",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/Algorithm/singleLink_Palindrome.out",
+            "program": "${workspaceFolder}/Algorithm/singleLinkOper/singleLinkOper.out",
             "args": [],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
