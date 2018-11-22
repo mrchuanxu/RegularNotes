@@ -162,3 +162,82 @@ colors.splice(2,1,"red","green") // 会删除当前数组位置2的项，然后�
 #### 位置方法
 indexOf(?)<br>
 #### 迭代方法
+
+### 面向对象的程序设计
+#### 理解对象
+创建自定义对象的最简单方式就是创建一个Object的实例，然后再为它添加属性和方法。
+```js
+var person = new Object();
+person.name = "trans"
+person.SayName = function(){
+  console.log(this.name);
+}
+```
+对象字面量语法
+```js
+var person = {
+  name:"trans",
+  SayName:function(){
+    console.log(this.name);
+  }
+}
+```
+修改属性默认的特性`Object.defineProperty()`方法，接收三个参数：属性所在的对象、属性的名字和一个描述符对象。描述符对象的属性必须是：`configurable、enumerable、writable和value`。设置其中的一或多个值，可以修改对应的特性值。
+```js
+var person = {};
+Object.defineProperty(person,"name",{
+  writable:false,
+  value:"modifiedName"
+});
+console.log(person.name);
+```
+设置name为只读属性，不能赋值改变。<br>
+configurable属性同理。设置为false之后就会有限制，不能设置修改。<br>
+##### 访问器属性
+访问器属性不包含数据值；它们包含一对儿getter和setter函数。访问会调用getter函数。写入会调用setter函数并传入新值。<br>
+使用`Object.defineProperty()`来定义访问器属性。<br>
+```js
+var book = {
+  _year:2004,
+  edition:1
+};
+Object.defineProperty(book,"year",{
+  get:function(){
+    return this._year;
+  },
+  set:function(newValue){
+    if(newValue > 2004){
+      this._year = newValue;
+      this.edition += newValue - 2004;
+    }
+  }
+});
+book.year = 2005
+console.log(book.edition);
+```
+#### 定义多个属性
+`Object.defineProperties()`
+```js
+var book = {};
+Object.defineProperties(book,{
+  _year:{
+    value:2004
+  },
+  edition:{
+    value:1
+  }，
+  year:{
+    get:function(){
+      return this._year
+    },
+    set:function(newValue){
+      ...
+    }
+  }
+})；
+```
+#### 创建对象
+工厂模式，构造函数模式，原型模式，动态原型模式，寄生构造函数模式，稳妥构造函数模式。
+#### 继承
+原型链，借用构造函数，组合继承，原型式继承，寄生式继承，寄生组合式继承
+设计模式将会有专门的文章解读！敬请期待！<br>
