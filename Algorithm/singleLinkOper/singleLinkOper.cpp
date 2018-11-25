@@ -77,7 +77,7 @@ bool deleteElement(singleLink *head, int n){
     i++;
     head = head->next;
   }
-  // delete head->next; // 释放指针内存空间
+  delete head->next; // 释放指针内存空间
   head->next = head->next->next;
   return true;
 }
@@ -144,7 +144,7 @@ singleLink* midleNode(singleLink *head){
 int main(){
   singleLink *head = new singleLink();
   head = initSingleLink();
-  head = insertRail(head,"abcdedcba");
+  head = insertRail(head,"ab");
   singleLink *mid = new singleLink();
   mid = midleNode(head);
 
