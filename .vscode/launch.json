@@ -8,7 +8,7 @@
         "name": "(gdb) Attach",
         "type": "cppdbg",
         "request": "attach",
-        "program": "${workspaceFolder}/Algorithm/stack/stackUse.out",
+        "program": "${workspaceFolder}/Algorithm/queue/queueUse.out",
         "processId": "${command:pickProcess}",
         "MIMode": "gdb"
       },
@@ -16,7 +16,7 @@
             "name": "(gdb) Launch",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/Algorithm/stack/stackUse.out",
+            "program": "${workspaceFolder}/Algorithm/queue/queueUse.out",
             "args": [],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
