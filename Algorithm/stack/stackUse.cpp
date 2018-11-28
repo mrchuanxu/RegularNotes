@@ -1,5 +1,6 @@
 #include <iostream>
 #include <string>
+#include <map>
 using namespace std;
 /***
  * 实现栈的数据结构并且实现判断符号的对称性{[{[()]}]}
@@ -7,6 +8,7 @@ using namespace std;
  * 后进先出
  * 定义pop和push
  * 支持动态扩容
+ * 匹配所有string "[{()}]"的关系
  ***/
 
 template <typename T> class StackUse{
@@ -47,22 +49,47 @@ template <typename T> void StackUse<T>::push(T element){
     cout << "success!" << endl;
 }
 
+// 判断字符串是否对称
+bool synicString(const string& str){
+    if(str.size() == 0)
+        return false;
+    map<char,char> signal_count = {{'{','}'},{'[',']'},{'(',')'}};
+    int str_half_size = str.size()/2;
+    if(str.size()%2 != 0)
+        return false;
+    char ctr[str_half_size];
+    StackUse<char> ictr(ctr);
+    int i = 0;
+    for(;i<str_half_size;i++){
+      ictr.push(str[i]);
+    }
+    while(signal_count[ictr.pop()] == str[i]){
+      ++i;
+      if(i == str.size())
+         return true;
+    }
+    return false;
+
+}
+
 int main(){
   char ctr[10];
   // cout << ctr << endl;
   StackUse<char> icr(ctr);
   icr.length = 10; // 支持动态扩容
-  string istr = "{([])}";
-  for(int i = 0; i<istr.size();i++){
-      icr.push(istr[i]);
+  string istr = "";
+  if(synicString(istr)){
+    cout << "yes!" << endl;
+  }else{
+    cout << "Nope!" << endl;
   }
-  // for(int j = 0;j<10;j++){
-  //   cout << ctr[j] << endl;
+  // for(int i = 0; i<istr.size();i++){
+  //     icr.push(istr[i]);
   // }
-  cout << icr.pop() << endl;
-  char insectr = 'h';
-  icr.push(insectr);
-  cout << icr.pop() << endl;
+  // cout << icr.pop() << endl;
+  // icr.push(insectr);
+  // cout << icr.pop() << endl;
+
   // int inum[3] = {2,3,4};
   // int *p = inum;
   // int *&r = p;

@@ -14,3 +14,13 @@ const不能调用non-const
 析构函数，构造函数，copy函数，copy assignmant函数
 ### Expilictly disallow the use of compiler-generated functions you do not want
 声明为private
+### Declare virtual destructor in polymorphics base classes
+析构函数,简单工厂模式,工厂模式,实现动态选择析构函数.
+### Prevent exceptions from leaving destructors
+try    catch
+### Never call virtual functions during destructions and constructions
+子类调用,提前释放,导致不明确行为
+### Have assignment operator return a reference to *this
+return *this;
+### Handle assignment self in operator=
+A *p = q; q = new A( *rhs.q ); delete p; return *this

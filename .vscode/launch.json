@@ -5,15 +5,15 @@
     "version": "0.2.0",
     "configurations": [
       {
-        "name": "(lldb) Attach",
+        "name": "(gdb) Attach",
         "type": "cppdbg",
         "request": "attach",
         "program": "${workspaceFolder}/Algorithm/stack/stackUse.out",
         "processId": "${command:pickProcess}",
-        "MIMode": "lldb"
+        "MIMode": "gdb"
       },
         {
-            "name": "(lldb) Launch",
+            "name": "(gdb) Launch",
             "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceFolder}/Algorithm/stack/stackUse.out",
@@ -22,7 +22,7 @@
             "cwd": "${workspaceFolder}",
             "environment": [],
             "externalConsole": true,
-            "MIMode": "lldb"
+            "MIMode": "gdb"
         }
     ]
 }
