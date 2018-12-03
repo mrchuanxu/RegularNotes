@@ -8,21 +8,21 @@
         "name": "(gdb) Attach",
         "type": "cppdbg",
         "request": "attach",
-        "program": "${workspaceFolder}/Algorithm/queue/queueUse.out",
+        "program": "${workspaceFolder}/Algorithm/bubble_insertSort/bubbleInsertSort.out",
         "processId": "${command:pickProcess}",
-        "MIMode": "gdb"
+        "MIMode": "lldb"
       },
         {
             "name": "(gdb) Launch",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/Algorithm/queue/queueUse.out",
+            "program": "${workspaceFolder}/Algorithm/bubble_insertSort/bubbleInsertSort.out",
             "args": [],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
             "environment": [],
             "externalConsole": true,
-            "MIMode": "gdb"
+            "MIMode": "lldb"
         }
     ]
 }
