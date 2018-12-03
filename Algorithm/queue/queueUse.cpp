@@ -6,7 +6,7 @@ using namespace std;
  * 1 队列，满足动态扩容 O
  * 2 满足数据搬移 O
  * 3 实现出栈，入栈操作 O
- * 4 循环队列实现 0
+ * 4 循环队列实现 O
  * ***/
 template <typename T> class queueUse{
     public:
