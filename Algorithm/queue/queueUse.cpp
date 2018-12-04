@@ -7,6 +7,7 @@ using namespace std;
  * 2 满足数据搬移 O
  * 3 实现出栈，入栈操作 O
  * 4 循环队列实现 O
+ * 5 遇到整型int要改变方式，具体还在想 x
  * ***/
 template <typename T> class queueUse{
     public:
@@ -33,7 +34,7 @@ template<typename T> bool queueUse<T>::cir_enqueue(const T& element){
     }
     *tail = element;
     ++count;
-    tail = array+((count)%length)*sizeof(T); // tail往后延伸，但是得求余获得位置，一般求余后得到的是一个循环
+    tail = &array[count%length]; // tail往后延伸，但是得求余获得位置，一般求余后得到的是一个循环
     return true;
 }
 
@@ -54,17 +55,17 @@ template<typename T> bool queueUse<T>::cir_dequeue(){
 }
 // 普通队列
 template<typename T> bool queueUse<T>::enqueue(const T& element){
-    if(tail == (array+(length-1)*sizeof(T))){ // 队列被插到最后，重新搬移数据
+    if(tail == &array[length-1]){ // 队列被插到最后，重新搬移数据
         if(head == array){
             cout << "queue is full!" << endl;
             return false;
         }
         int lochead = length-count; // 完成数据搬移
         for(int i = lochead;i<length;++i){
-            auto currarr = array+(i-lochead)*sizeof(T); // 数据搬移操作
-            *currarr = *(array+i*sizeof(T));
+            auto currarr = &array[i-lochead]; // 数据搬移操作
+            *currarr = &array[i];
         }
-        tail = array+(count-1)*sizeof(T);
+        tail = &array[count-1];
         head = array;
     }
     *tail = element;
@@ -90,7 +91,7 @@ template<typename T> bool queueUse<T>::dequeue(){
 }
 
 int main(){
-    char qctr[10];
+    char *qctr = new char[10];
     queueUse<char> quctr(qctr,10);
     string str = "i love u";
     int i = 0;
@@ -106,5 +107,19 @@ int main(){
         ++i;
     }
     while(quctr.cir_dequeue());
+    i = 0;
+    delete [] qctr;
+    // int arr_int[10];
+    // int *arr_enque = new int[10]{1,4,6,4,5,6,7,8,9,0};
+    // cout << ++arr_enque << endl;
+    // cout << *arr_enque << endl;
+    // cout << arr_enque[7] << endl;
+    // cout << *(arr_enque+sizeof(int)) << endl;
+    // cout << sizeof(int) << endl;
+    // queueUse<int> arr_queue(arr_int,10);
+    // while(arr_queue.cir_enqueue(arr_enque[i])&&arr_enque[i]){
+    //     ++i;
+    // }
+    // while(arr_queue.cir_dequeue());
     return 0;
 }

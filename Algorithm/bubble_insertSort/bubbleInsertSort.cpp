@@ -27,29 +27,54 @@ template <typename T> void bubbleInsertSort<T>::bubbleSort(){
     if(arr_size <= 1){
           return;
     }
+    T *arrHead = arr;
     for(int i = 0; i < arr_size; i++){
         bool flag = false;
         for(int j = 0; j < arr_size-i-1;++j){
-            if(*(arr+j*sizeof(T)) > *(arr+(j+1)*sizeof(T))){
-                T tmp = *(arr+j*sizeof(T));
-                *(arr+j*sizeof(T)) = *(arr+(j+1)*sizeof(T));
-                *(arr+(j+1)*sizeof(T)) = tmp;
+            if(arr[j] > arr[j+1]){
+                int tmp = arr[j]; // origin arr arr[j]
+                arr[j] = arr[j+1]; // arr[j] = arr[j+1]
+                arr[j+1] = tmp; // arr[j+1]
                 flag = true;
             }
+            //++arr;
         }
         if(!flag)
-            break;     
+            break;
+        arr = arrHead;    
     }
 }
+// 插入排序
+template <class T> void bubbleInsertSort<T>::insertSort(){
+    if(arr_size<=1){
+        return;
+    }
+    for(int i = 1; i <arr_size;i++){
+        T value = arr[i];
+        int j = i-1;
+        for(;j>=0;--j){
+            if(arr[j] > value){
+                arr[j+1] = arr[j]; // 腾出一个空间
+            }else{
+                break;
+            }
+        }
+        arr[j+1] = value;
+    }
+}
+
 int main(){
-    int arr[10] = {2,3,4,7,6,4,2,3,3,4};
+    int *arr = new int[10]{2,3,4,7,6,4,2,3,3,4};
     bubbleInsertSort<int> bSort(arr);
     bSort.arr_size = 10;
-    bSort.bubbleSort();
+    // bSort.bubbleSort();
+    bSort.insertSort();
     int i = 0;
     while(i<10){
         cout << arr[i] << endl;
+        i++;
     }
+    delete [] arr;
     return 0;
 }
 
