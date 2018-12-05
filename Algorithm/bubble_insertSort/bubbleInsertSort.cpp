@@ -12,7 +12,6 @@ using namespace std;
 template <typename T> class bubbleInsertSort{
     public:
         bubbleInsertSort(T *array):arr(array){
-
         }
         T *arr;
         void bubbleSort();
@@ -27,7 +26,6 @@ template <typename T> void bubbleInsertSort<T>::bubbleSort(){
     if(arr_size <= 1){
           return;
     }
-    T *arrHead = arr;
     for(int i = 0; i < arr_size; i++){
         bool flag = false;
         for(int j = 0; j < arr_size-i-1;++j){
@@ -41,7 +39,6 @@ template <typename T> void bubbleInsertSort<T>::bubbleSort(){
         }
         if(!flag)
             break;
-        arr = arrHead;    
     }
 }
 // 插入排序
