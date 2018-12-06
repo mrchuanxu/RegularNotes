@@ -8,7 +8,7 @@
         "name": "(gdb) Attach",
         "type": "cppdbg",
         "request": "attach",
-        "program": "${workspaceFolder}/Algorithm/bubble_insertSort/bubbleInsertSort.out",
+        "program": "${workspaceFolder}/Algorithm/merge_quickSort/mergeQuickSort.out",
         "processId": "${command:pickProcess}",
         "MIMode": "lldb"
       },
@@ -16,7 +16,7 @@
             "name": "(gdb) Launch",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/Algorithm/bubble_insertSort/bubbleInsertSort.out",
+            "program": "${workspaceFolder}/Algorithm/merge_quickSort/mergeQuickSort.out",
             "args": [],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
