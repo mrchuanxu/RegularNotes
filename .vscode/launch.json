@@ -8,7 +8,7 @@
         "name": "(gdb) Attach",
         "type": "cppdbg",
         "request": "attach",
-        "program": "${workspaceFolder}/Algorithm/lineSort/countSort.out",
+        "program": "${workspaceFolder}/Algorithm/swordtooffer/dynamic_greedy/dynamic_greedy.out",
         "processId": "${command:pickProcess}",
         "MIMode": "lldb"
       },
@@ -16,7 +16,7 @@
             "name": "(gdb) Launch",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/Algorithm/lineSort/countSort.out",
+            "program": "${workspaceFolder}/Algorithm/swordtooffer/dynamic_greedy/dynamic_greedy.out",
             "args": [],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
