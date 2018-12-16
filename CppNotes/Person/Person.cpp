@@ -62,12 +62,37 @@ class EvilBadGuy:public GameCharacter{
         explicit EvilBadGuy(HeathCalcFunc hcf = defaultHeathCalc):GameCharacter(hcf){}
 };
 
+class Shape{
+    public:
+        enum ShapeColor{red,Green,Blue};
+        virtual void draw(ShapeColor color = red) const = 0;
+};
+
+class Rectangle:public Shape{
+    public:
+        virtual void draw(ShapeColor color = Green) const{
+            cout << "rect" << endl;
+        }
+};
+
+class Circle:public Shape{
+    public:
+        virtual void draw(ShapeColor color) const{
+            cout << "circle" << endl;
+        }
+};
+
 int main(){
-    Person *sp = new Student("trans");
-    Student *st = new Student("trans");
-    cout << sp->name() << endl;
-    st->countNum();
-    st->doHeathValue();
-    st->name();
+    // Person *sp = new Student("trans");
+    // Student *st = new Student("trans");
+    // cout << sp->name() << endl;
+    // st->countNum();
+    // st->doHeathValue();
+    // st->name();
+    Shape *ps;
+    Shape *pc = new Circle;
+    Shape *pr = new Rectangle;
+    pc->draw(Shape::red);
+    pr->draw(Shape::red);
     return 0;
 }
