@@ -82,6 +82,10 @@ class Circle:public Shape{
         }
 };
 
+class Square:virtual public Shape{ // 一般很少使用virtual继承
+
+};
+
 int main(){
     // Person *sp = new Student("trans");
     // Student *st = new Student("trans");
