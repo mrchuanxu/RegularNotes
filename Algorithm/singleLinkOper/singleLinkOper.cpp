@@ -140,22 +140,58 @@ singleLink* midleNode(singleLink *head){
     // delete ps;
     // delete pf;
 }
+// 两个有序链表合并  空间复杂度 O(1) 时间复杂度 O(n)
+singleLink* mergeTwoLink(singleLink* llist,singleLink *rlist){
+  if(llist == NULL && rlist!= NULL)
+      return rlist;
+  else if(rlist == NULL && llist!= NULL)
+      return llist;
+  
+  auto head = llist;
+  while(head->next&&rlist){
+      // 相当于插入
+      auto tmpllist = head->next;
+        if(tmpllist->ctr >= rlist->ctr){
+          auto tmprlist = rlist;
+          rlist = rlist->next;
+          tmprlist->next = tmpllist;
+          head->next = tmprlist;
+        }else if(head->ctr < rlist->ctr){
+          head = head->next;
+        }
+  }
+  //  剩余rlist 都是比llist的数字大，所以直接插到后面即可
+  while(rlist){
+    head->next = rlist;
+    rlist = rlist->next;
+    head = head->next;
+  }
+  return llist;
+}
 
 int main(){
   singleLink *head = new singleLink();
   head = initSingleLink();
-  head = insertRail(head,"ab");
-  singleLink *mid = new singleLink();
-  mid = midleNode(head);
-
-  //if(insertElement(head,4,'D')){
-  singleLink *reveseNode = new singleLink();
-  reveseNode = reverseLink(mid,reveseNode);
-  if(verifyPalindrome(head,reveseNode)){
-    cout << "yes,is palindrome" << endl;
-  }else{
-    cout << "nope, it is not" << endl;
+  head = insertRail(head,"45689");
+  singleLink *rlsit = new singleLink();
+  rlsit = initSingleLink();
+  rlsit = insertRail(rlsit,"123678");
+  head = mergeTwoLink(head,rlsit);
+  while(head){
+    cout << head->ctr << endl;
+    head = head->next;
   }
+  // singleLink *mid = new singleLink();
+  // mid = midleNode(head);
+
+  // //if(insertElement(head,4,'D')){
+  // singleLink *reveseNode = new singleLink();
+  // reveseNode = reverseLink(mid,reveseNode);
+  // if(verifyPalindrome(head,reveseNode)){
+  //   cout << "yes,is palindrome" << endl;
+  // }else{
+  //   cout << "nope, it is not" << endl;
+  // }
   // while(reveseNode){
   //   if(reveseNode->ctr!=NULL){
 

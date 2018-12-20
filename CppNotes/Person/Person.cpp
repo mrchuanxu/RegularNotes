@@ -85,6 +85,50 @@ class Circle:public Shape{
 class Square:virtual public Shape{ // 一般很少使用virtual继承
 
 };
+class CompanyZ{
+    public:
+        void sendEncrypted(const string& msg);
+
+};
+
+class MsgInfo;
+
+template<typename company> class MsgSender{
+    public:
+        void sendSecret(const MsgInfo& info);
+};
+template<> class MsgSender<CompanyZ>{
+    public:
+        void sendSecret(const MsgInfo& info){
+
+        }
+        void sendClear(const MsgInfo& info){
+
+        }
+};
+
+template<typename company> class logMsgSender:public MsgSender<company>{
+    public:
+        using MsgSender<company>::sendClear;
+        void sendClearMsg(const MsgInfo& info){
+            sendClear(info);
+        }
+};
+
+template<typename T> class SquareMatrixBase{
+    protected:
+        SquareMatrixBase(size_t n,T* pMem):size(n),pData(pMem){}
+        void setDataPtr(T* ptr){pData = ptr;}
+    private:
+        size_t size;
+        T* pData;
+};
+template<typename T,size_t n>class SquareMatrix:private SquareMatrixBase<T>{
+    public:
+       SquareMatrix():SquareMatrixBase<T>(n,data){}
+    private:
+        T data[n*n];
+};
 
 int main(){
     // Person *sp = new Student("trans");
