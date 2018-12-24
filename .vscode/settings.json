@@ -1,5 +1,7 @@
 {
     "files.associations": {
-        "ostream": "cpp"
+        "ostream": "cpp",
+        "new": "cpp",
+        "chrono": "cpp"
     }
 }

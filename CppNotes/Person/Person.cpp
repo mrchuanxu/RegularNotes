@@ -130,7 +130,46 @@ template<typename T,size_t n>class SquareMatrix:private SquareMatrixBase<T>{
         T data[n*n];
 };
 
+
+class Top{
+    public:
+    void tprint(){
+        cout << "Top" << endl;
+    }
+};
+class Middle:public Top{
+    public:
+    void print(){
+        cout << "middle" << endl;
+    }
+};
+
+template<typename T> class SmartPtr{
+    public:
+        template<typename U> SmartPtr(const SmartPtr<U>& other):heldPtr(other.get()){}
+        T* get() const{ return heldPtr;}
+    private:
+        T* heldPtr;
+};
+
+
+/***
+ * 模版元编程
+ * 在编译期间，完成代码执行
+ * ***/
+template<unsigned n> struct Factorial{
+    enum{value = n*Factorial<n-1>::value};
+};
+// 特殊情况
+template<> struct Factorial<0>{
+    enum{value = 1};
+};
+
 int main(){
+    // 模版元编程的使用
+    cout << Factorial<8>::value;
+    
+    SmartPtr<Top> ptr1(Middle);
     // Person *sp = new Student("trans");
     // Student *st = new Student("trans");
     // cout << sp->name() << endl;
