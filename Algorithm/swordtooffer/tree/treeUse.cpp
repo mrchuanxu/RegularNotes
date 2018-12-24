@@ -31,6 +31,23 @@ bool binaryRoot(BinaryTreeNode *p_LRoot,BinaryTreeNode *p_RRoot){
         if(p_LRoot == nullptr)
             return false;
         if(p_RRoot == nullptr)
+            return true;   // 这是一个比较重要的一点，即遍历到B树的最后一层，返回true，作为结束条件
+        if(!equal(p_LRoot->m_dbValue,p_RRoot->m_dbValue))
             return false;
-        
+        return binaryRoot(p_LRoot->m_pLeft,p_RRoot->m_pLeft)&&binaryRoot(p_LRoot->m_pRight,p_RRoot->m_pRight);
+}
+
+bool binarySubSame(BinaryTreeNode *p_LRoot,BinaryTreeNode *p_RRoot){
+        if(p_LRoot == nullptr)
+            return false;
+        if(p_RRoot == nullptr)
+            return false;
+        bool result = false;
+        if(equal(p_LRoot->m_dbValue,p_RRoot->m_dbValue))
+            result = binaryRoot(p_LRoot,p_RRoot);
+        if(!result)
+            result = binarySubSame(p_LRoot->m_pLeft,p_RRoot);
+        if(!result)
+            result = binarySubSame(p_LRoot->m_pRight,p_RRoot);
+        return result;
 }
