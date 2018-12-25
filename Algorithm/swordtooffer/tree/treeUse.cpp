@@ -1,4 +1,5 @@
 #include <iostream>
+#include <stack>
 #include <cmath>
 using namespace std;
 
@@ -50,4 +51,43 @@ bool binarySubSame(BinaryTreeNode *p_LRoot,BinaryTreeNode *p_RRoot){
         if(!result)
             result = binarySubSame(p_LRoot->m_pRight,p_RRoot);
         return result;
+}
+
+/***
+ * 求二叉树的镜像
+ * 其实就是交换非叶子节点的左右子节点
+ * 遇到我就交换
+ * ***/
+void MirrorbinaryTree(BinaryTreeNode *btn){
+    if(btn == nullptr)
+        return;
+    if(btn->m_pLeft == nullptr&&btn->m_pRight == nullptr)
+        return;
+    swap(btn->m_pLeft,btn->m_pRight);
+    if(btn->m_pLeft)
+        MirrorbinaryTree(btn->m_pLeft);
+    if(btn->m_pRight)
+        MirrorbinaryTree(btn->m_pRight);
+}
+
+/***
+ * 用循环实现上述镜像
+ * 要想明白二叉树的递归调用，首先得明白二叉树的存储方式和栈的处理
+ * ***/
+void MirrorTree(BinaryTreeNode *btn){
+    if(btn == nullptr)
+        return;
+    // 用栈来解决
+    stack<BinaryTreeNode* > stcNode;
+    stcNode.push(btn);
+    while(stcNode.size()>0){
+        BinaryTreeNode *pbtn = stcNode.top();
+        stcNode.pop();
+        swap(pbtn->m_pLeft,pbtn->m_pRight);
+        // 入栈操作
+        if(pbtn->m_pLeft)
+            stcNode.push(pbtn->m_pLeft);
+        if(pbtn->m_pRight)
+            stcNode.push(pbtn->m_pRight);
+    }
 }
