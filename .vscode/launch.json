@@ -9,7 +9,7 @@
         "type": "cppdbg",
         "request": "attach",
         // "program": "${workspaceFolder}/Cpp_Program/smartPtr/smartPtrUse.out",
-        "program": "${workspaceFolder}/Algorithm/hashMap/hasMap.out",
+        "program": "${workspaceFolder}/Algorithm/binaryTree/binaryTree.i",
         //"program": "${workspaceFolder}/Algorithm/swordtooffer/expandMode/expandMode.out",
         "processId": "${command:pickProcess}",
         "MIMode": "lldb"
@@ -19,7 +19,7 @@
             "type": "cppdbg",
             "request": "launch",
             //"program": "${workspaceFolder}/Cpp_Program/smartPtr/smartPtrUse.out",
-            "program": "${workspaceFolder}/Algorithm/hashMap/hasMap.out",
+            "program": "${workspaceFolder}/Algorithm/binaryTree/binaryTree.i",
             //"program": "${workspaceFolder}/Algorithm/swordtooffer/expandMode/expandMode.out",
             "args": [],
             "stopAtEntry": false,

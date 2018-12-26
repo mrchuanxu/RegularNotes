@@ -1,5 +1,5 @@
 #include <iostream>
-
+using namespace std;
 /***
  * 二叉树
  * 链式存储与数组存储方式
@@ -13,6 +13,44 @@
  * 下标位置界定 2i与2i+1
  * ***/
 // 给我一组数
-bool arrCompleteTree(int *arr){
-    
+struct BinaryTreeNode{
+    int val;
+    BinaryTreeNode *pLeft;
+    BinaryTreeNode *pRight;
+};
+
+// 构建一棵二叉树 前序遍历构建 static保证len唯一
+BinaryTreeNode* buildTree(int *arr,int len){
+    BinaryTreeNode *p;
+    if(len < 0)
+        p = nullptr;
+    else{
+        p = new BinaryTreeNode();
+        p->val = arr[len];
+        p->pLeft = buildTree(arr,--len);
+        p->pRight = buildTree(arr,--len); 
+    }
+    return p;
+}
+
+void preOrder(BinaryTreeNode *p){
+    if(p==nullptr)
+        return;
+    cout << p->val << endl;
+    preOrder(p->pLeft);
+    preOrder(p->pRight);
+}
+void InOrder(BinaryTreeNode *p){
+    if(p==nullptr)
+        return;
+    InOrder(p->pLeft);
+    cout << p->val << endl;
+    InOrder(p->pRight);
+}
+int main(){
+    int arr[6]{14,16,11,9,10,13};
+    BinaryTreeNode *p = buildTree(arr,5);
+    preOrder(p);
+    InOrder(p);
+    return 0;
 }

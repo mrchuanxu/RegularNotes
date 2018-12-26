@@ -73,6 +73,8 @@ void MirrorbinaryTree(BinaryTreeNode *btn){
 /***
  * 用循环实现上述镜像
  * 要想明白二叉树的递归调用，首先得明白二叉树的存储方式和栈的处理
+ * 所以需要学会构建树这个结构
+ * 考虑清楚运行完一个pLeft就要压栈一个pRight然后再考虑到程序最后出栈操作
  * ***/
 void MirrorTree(BinaryTreeNode *btn){
     if(btn == nullptr)
