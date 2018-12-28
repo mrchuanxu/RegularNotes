@@ -21,14 +21,15 @@ struct BinaryTreeNode{
 
 // 构建一棵二叉树 前序遍历构建 static保证len唯一
 BinaryTreeNode* buildTree(int *arr,int len){
+    static int Len = len;// 这里是正确的！ 这里如果通过压栈，就存在不唯一的情况，不停滴遍历新的len
     BinaryTreeNode *p;
-    if(arr[len]==0||len<0) // FIXME:
+    if(arr[Len]==0)
         p = nullptr;
     else{
         p = new BinaryTreeNode();
-        p->val = arr[len];
-        p->pLeft = buildTree(arr,--len);
-        p->pRight = buildTree(arr,--len); 
+        p->val = arr[Len];
+        p->pLeft = buildTree(arr,--Len);
+        p->pRight = buildTree(arr,--Len); 
     }
     return p;
 }
@@ -48,10 +49,10 @@ void InOrder(BinaryTreeNode *p){
     InOrder(p->pRight);
 }
 int main(){
-    int arr[9]{0,14,16,0,11,0,9,10,13};
-    BinaryTreeNode *p = buildTree(arr,8);
+    int arr[13]{0,0,0,14,16,0,0,11,0,0,9,10,13}; // 这里要有一个思想，就是，遍历的时候，出现二叉树没有左右结点，都要写为0 也就是置🈳️
+    BinaryTreeNode *p = buildTree(arr,12);
     preOrder(p);
-    // InOrder(p);
+    InOrder(p);
     // cout << arr[6] <<endl;
     return 0;
 }
