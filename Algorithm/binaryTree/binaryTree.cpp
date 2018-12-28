@@ -22,7 +22,7 @@ struct BinaryTreeNode{
 // 构建一棵二叉树 前序遍历构建 static保证len唯一
 BinaryTreeNode* buildTree(int *arr,int len){
     BinaryTreeNode *p;
-    if(len < 0)
+    if(arr[len]==0||len<0) // FIXME:
         p = nullptr;
     else{
         p = new BinaryTreeNode();
@@ -48,9 +48,10 @@ void InOrder(BinaryTreeNode *p){
     InOrder(p->pRight);
 }
 int main(){
-    int arr[6]{14,16,11,9,10,13};
-    BinaryTreeNode *p = buildTree(arr,5);
+    int arr[9]{0,14,16,0,11,0,9,10,13};
+    BinaryTreeNode *p = buildTree(arr,8);
     preOrder(p);
-    InOrder(p);
+    // InOrder(p);
+    // cout << arr[6] <<endl;
     return 0;
 }

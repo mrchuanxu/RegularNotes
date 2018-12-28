@@ -153,6 +153,11 @@ template<typename T> class SmartPtr{
 };
 
 
+template <typename T> class Handler{
+    public:
+    T val;
+};
+
 /***
  * 模版元编程
  * 在编译期间，完成代码执行
@@ -181,5 +186,7 @@ int main(){
     Shape *pr = new Rectangle;
     pc->draw(Shape::red);
     pr->draw(Shape::red);
+
+    Handler<char> 
     return 0;
 }

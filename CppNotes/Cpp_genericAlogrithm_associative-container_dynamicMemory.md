@@ -1486,13 +1486,13 @@ auto const p = alloc.allocate(n);  //分配n个未初始化的string
 ```
 这个allocate调用为n个string分配了内存<br>
 `allocator<T> a ` 定义了一个名为a的allocator对象，他可以为类型为T的对象分配内存<br>
-`a.allocator(n)`  分配一段原始的，未构造的内存，保存n个类型为T的对象<br>
-`a.deallocate(p,n)` 释放从T* 指针p中的地址开始的内存，这块内存保存了n个类型为T的对象；p必须是一个先前由allocate返回的指针，且n必须是p穿件时所要求的大小。在调用deallocatr之前，用户必须对每个在这块内存中创建的对象调用destory<br>
+`a.allocate(n)`  分配一段原始的，未构造的内存，保存n个类型为T的对象<br>
+`a.deallocate(p,n)` 释放从T* 指针p中的地址开始的内存，这块内存保存了n个类型为T的对象；p必须是一个先前由allocate返回的指针，且n必须是p创建时所要求的大小。在调用deallocate之前，用户必须对每个在这块内存中创建的对象调用destory<br>
 `a.construct(p,args)` p必须是一个类型为T* 的指针，指向一块原始内存：arg被传递给类型为T的构造函数，用来在p指向的内存中构造一个对象<br>
 `a.destory(p)`  p为T* 类型的指针，此算法对p指向的对象执行析构函数<br>
 allocator分配未构造的内存<br>
 
-**allocator分配的内存是未构造的** 。我们按需要在此内存中构造对象。在新标准库中，construct成员函数接受一个指针和零个或多个额外参数，在给定位置构造一个元素。额外参数用来初始化构造的对象。类似make_shared的擦背上个月，这些额外的参数必须与构造的对象的类型相匹配的合法的初始化器<br>
+**allocator分配的内存是未构造的** 。我们按需要在此内存中构造对象。在新标准库中，construct成员函数接受一个指针和零个或多个额外参数，在给定位置构造一个元素。额外参数用来初始化构造的对象。类似make_shared，这些额外的参数必须与构造的对象的类型相匹配的合法的初始化器<br>
 ```cpp
 auto q = p; //q指向最后构造的元素之后的位置
 alloc.construct(q++); //*q未空字符串
