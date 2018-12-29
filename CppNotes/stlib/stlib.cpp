@@ -15,6 +15,7 @@ using namespace std;
  * random 定义为static 引擎才能生成不同的序列 引擎要在循环外定义，不然保持不了状态
  * 使用io库
  * seek与tell 读取文件任意位置
+ * 
  * ***/
 
 int main(){
