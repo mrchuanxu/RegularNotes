@@ -10,7 +10,7 @@ int main(int argc,char* argv[]){
         err_sys("can't open %s",argv[1]);
     while((dirp = readdir(dp))!=NULL)
         printf("%s\n",dirp->d_name);
-    
+    printf("%s\n",argv[1]);
     closedir(dp);
-    exit(0);
+    exit(main(argc,argv));
 }
