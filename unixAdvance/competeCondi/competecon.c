@@ -4,15 +4,15 @@ static void charatatimr(char *);
 
 int main(void){
     pid_t pid;
-    // TELL_WAIT();
+    //TELL_WAIT();
     if((pid=fork())<0){
         err_sys("fork error");
     }else if(pid==0){
-        WAIT_PARENT();
+       // WAIT_PARENT();
         charatatimr("output from child\n");
     }else{
         charatatimr("out put from parent\n");
-        TELL_CHILD(pid);
+        //TELL_CHILD(pid);
     }
     exit(0);
 }

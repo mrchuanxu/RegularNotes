@@ -42,7 +42,7 @@ int main(void){
     else if(pid==0) // child
         status/=0; // divide by 0 generate sinfre
     
-    if(wait(&status)!=pid) // wait child
+    if(wait(&status)!=pid) // wait child 
         err_sys("wait error");
     pre_exit(status); // print status
 

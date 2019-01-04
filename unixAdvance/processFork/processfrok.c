@@ -32,14 +32,16 @@ int main(void){
         //printf("pid=%ld,glob=%d,vr=%d\n",(long)getppid(),globvar,var);
         printf("a=%d\n",subProcess(10));
         globvar++;
-        _exit(0);
+        fclose(stdout);
+        exit(0);
     }
     // }else{
     //     //sleep(2);
     //     printf("a=%d\n",subProcess(420)); // 可以等待其他请求
     //     printf("i am Process and i sleep\n");
     // }
-    printf("pid=%ld,glob=%d,vr=%d\n",(long)getpid(),globvar,var); 
+    int i = printf("pid=%ld,glob=%d,vr=%d\n",(long)getpid(),globvar,var); 
+    printf("i=%d\n",i);
     //printf("pid=%ld,glob=%d,vr=%d\n",(long)getppid(),globvar,var); 
     exit(0);
 }
