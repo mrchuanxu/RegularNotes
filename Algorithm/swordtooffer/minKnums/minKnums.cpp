@@ -16,6 +16,10 @@
  * 用到红黑树会比较好使用
  * 其中multiset就是用红黑树存储的
  * 
+ * 
+ * 寻找最大的k个数可以用最小堆实现
+ * 寻找最小k个元素可用最大堆来实现
+ * 
  * ***/
 
 #include <set>
@@ -31,11 +35,11 @@ void getLeastNumbers(const vector<int>& data,setInt& intSet,int k){
         return;
     vector<int>::const_iterator iter = data.begin();
     for(;iter!=data.end();++iter){
-        if(intSet.size()<k){
+        if(intSet.size()<k){ // 在堆中建立k个元素的堆
             intSet.insert(*iter);
         }else{
-            setIterator siter = intSet.begin();
-            if(*iter < *siter){
+            setIterator siter = intSet.begin(); // 与最大堆的堆顶元素做比较
+            if(*iter < *siter){ // 小于堆顶元素就插入，然后堆化
                 intSet.erase(*siter);
                 intSet.insert(*iter);
             }
