@@ -392,7 +392,7 @@ int *last = end(ia);
 **C风格字符串**<br>
 **C边准库String函数**<br>
 strlen(p) 返回p的长度，空字符串不计算在内<br>
-strcmp(p1,p2) 比较p1 和p2的相等性，如果p1 == p2，返回0；如果p1 > p2，返回一个正值； 如果p1<p2，返回一个负值<br>
+strcmp(p1,p2) 比较p1 和p2的相等性，如果p1 == p2，返回0；如果`p1 > p2`，返回一个正值； 如果`p1<p2`，返回一个负值<br>
 strcat(p1,p2) 将p2附加到p1之后，返回p1<br>
 strcpy(p1,p2) 将p2拷贝给p1，返回p1<br>
 **指针和多维数组**<br>
