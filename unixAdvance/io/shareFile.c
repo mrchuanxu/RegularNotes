@@ -24,3 +24,36 @@
  * 两函数的返回值，若成功，返回新的文件描述符，若出错，返回-1
  * 
  * ***/
+
+#include <unistd.h>
+#include "../include/apue.h"
+#include <fcntl.h>
+
+char buf[] = "i am your father";
+char buf1[] = "who the hell are you?";
+
+int main(){
+    int fd,fdup;
+    int n;
+    if((fd = open("./shareFile.hole",O_WRONLY))<0){
+        if(errno == ENOENT){
+            if((fd=creat("./shareFile.hole",FILE_MODE))<0)
+                err_sys("create error");
+        }else{
+            err_sys("open error");
+        }
+    }
+    fdup = dup(fd); // fdup指定新描述符的值
+    int pid;
+    if((pid=fork())<0){
+        err_sys("fork error");
+    }else if(pid==0){ // 这里创建了一个子进程，写入一串字符串
+        if((n=write(fdup,buf1,21))!=21)
+           err_sys("write error");
+        exit(0);
+    }
+    printf("fdup:%d,fd:%d\n",fdup,fd);
+    if((n=write(fd,buf,20))!=20) // 这里反而写不进去？
+        err_sys("write error");
+    exit(0);
+}

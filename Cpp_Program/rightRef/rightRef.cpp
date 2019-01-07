@@ -1,5 +1,6 @@
 
 #include <iostream>
+
 using namespace std;
 
 /***
@@ -14,8 +15,10 @@ using namespace std;
  * 所以当我们使用移动构造函数的时候，需要使用的移动运算符std::move
  * 
  * **/
-template<typename T> void func(T&& t){
-    cout << t << endl;
+void processValue(int &a){cout <<"lvalue"<<endl;}
+void processValue(int &&a){cout << "rvalue"<<endl;}
+template<typename T> void func(T&& val){
+    processValue(std::forward(val)); // FIXME:
 }
 int && i = 0;
 
@@ -73,6 +76,8 @@ int main(){
     Test movTest = std::move(getA()); // 调用移动构造函数 所以这里不需要再构造一次，直接用移动构造
     // test = movTest;
     test = std::move(getA()); // 这里
-    
+    int i = 10;
+    func(i);
+    func(0);
     return 0;
 }
