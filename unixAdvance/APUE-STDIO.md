@@ -20,7 +20,7 @@ int freopen();
 ### 标准输入、标准输出和标准错误
 STDIN_FILENO、STDOUT_FILENO和STDERR_FILENO<br>
 这三个流可以自动地被进程使用。<br>
-预定义文件指针 stdin,stdout和stderr加以引用
+预定义文件指针 stdin,stdout和stderr加以引用。这里需要注意一下⚠️ 文件指针，就是指向了文件的指针，只是对指针所指对象进行操作
 <br>
 ### 缓冲
 标准io库提供缓冲的目的是尽可能减少使用read和write调用的次数。<br>
@@ -49,3 +49,73 @@ int setbuf(FILE *restrict fp,char *restrict buf,int mode,size_t size);
 fflush(FILE *fp);//  此函数使该流所有未写的数据都传送至内核。NULL就表示所有输出流都被冲洗 成功返回0 出错 EOF
 ```
 ### 打开流
+```c
+#include <stdio.h>
+FILE *fopen(const char *restrict pathname,const char *restrict type);
+FILE *freopen(const char *restrict pathname,const char *restrict type,FILE *restrict fp);
+FILE *fdopen(int fd,const char *type);
+// 成功。返回文件指针。出错，返回null
+```
+一共三个函数打开一个标准I/O流。<br>
+* fopen函数打开路径名为pathname的一个指定的文件。<br>
+* freopen函数在一个指定的流上打开一个指定的文件，如若该流已经打开，则先关闭该流，然后再打开。若该流已经定向，则使用freopen清除该定向。（定向是指字节定向和宽定向。此函数一般用于将一个指定的文件打开为一个预定义的流；标准输入和标准输出或标准错误。
+* fdpeon函数就是取一个已有的文件描述符（可能从open，dup，dup2，fcntl，pipe，socket、socketpair或accept函数得到此文件描述符。并使一个标准的io流与该描述符相结合。此函数常用于由创建管道和网络通信通道函数返回的描述符。因为这些特殊类型的文件不能用标准io函数fopen打开，所以用文件描述符打开。<br>
+type有十五种类型 ISO C标准，十五种。<br>
+![打开标准IO流的type参数](./img/type.png)<br>
+b，就是用来区分文本文件和二进制文件。unix不区分这个！所有要和不要，没啥区别。在unix环境里。<br>
+追加a不能用于创建该文件。<br>
+追加肯定写到文件尾端处。多进程也能正确写到文件中。<br>
+指定w或a类型创建一个新文件，无法说明该文件的访问权限位。（open，creat可以做到）。<br>
+POSIX.1 要求使用如下权限位集来创建文件。<br>
+S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH|S_IWOTH<br>
+```c
+int fclose(FILE *fp);// 成功返回0.出错返回EOF
+```
+除非流引用终端设备，否则按系统默认，流被打开使全缓冲的。setbuf和setvbuf可以改。<br>
+当文件被关闭，就会冲洗缓冲中的输出数据。缓冲区中的任何输入数据被丢弃。如果标准io库已经为该流自动分配一个缓冲区，则释放此缓冲区。<br>
+当一个进程正常终止时🛑，直接调用exit函数，或从main函数返回，则所有带未写缓冲数据的标准io流都被冲洗，所有打开的标注io流都会被关闭。<br>
+### 读写流
+三种不同类型的非格式化io进行操作。
+* 每次一个字符io。一次读或写一个字符，如果流是带缓冲的，则标准io函数处理所有缓冲。
+* 每次一行io，如果想要一次读或写一行，用fgets和fputs。换行符🤚
+* 直接io。fread和fwrite。每次io操作或写某种数量的对象，而每个对象具有指定的长度。这两个函数常用于从二进制文件中每次读或写一个结构。
+```c
+#include <stdio.h>
+int getc(FILE *fp);
+int fgetc(FILE *fp);
+int getchar(void);
+// 三个函数返回值，若成功，返回下一个字符；到达文件尾端或出错，返回EOF
+```
+所以，很聪明地加了两个函数来出来是否出错还是到达文件尾端<br>
+```c
+#include <stdio.h>
+int ferror(FILE *fp);
+int feof(FILE *fp);
+// 真，返回非0，否，返回0；
+void clearerr(FILE *fp);
+```
+从流读出数据以后，可以调用ungetc将字符再压回流中。<br>
+```c
+int ungetc(int c,FILE *fp); // 成功返回c，出错返回EOF
+```
+这个只是将它们写回标准io库的流缓冲区。并没有真正写入文件。<br>
+输出函数
+```c
+#include <stdio.h>
+int putc(int c,FILE *fp);
+int fputc(int c,FILE *fp);
+int putchar(int c); // 成功返回c，出错返回EOF
+```
+### 每次一行io
+输出一行
+```c
+#include <stdio.h>
+char *fgets(char *restrict buf,int n,FILE *restrict fp);
+char *gets(char *buf); //  成功，返回buf，尾端或出错，返回NULL
+```
+输入一行
+```c
+#include <stdio.h>
+char *fputs(constr char *restrict buf,FILE *restrict fp);
+char *puts(const char *buf); //  成功，返回非负值，尾端或出错，返回EOF
+```
