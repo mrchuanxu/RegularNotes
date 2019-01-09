@@ -9,7 +9,7 @@
         "type": "cppdbg",
         "request": "attach",
         // "program": "${workspaceFolder}/Cpp_Program/smartPtr/smartPtrUse.out",
-        "program": "${workspaceFolder}/Algorithm/graphStorage/graphStorage.t",
+        "program": "${workspaceFolder}/Algorithm/bfsGraph/bfsGraph.t",
         //"program": "${workspaceFolder}/Algorithm/swordtooffer/rebuildTree/rebuildTree.t",
         "processId": "${command:pickProcess}",
         "MIMode": "lldb"
@@ -19,7 +19,7 @@
             "type": "cppdbg",
             "request": "launch",
             //"program": "${workspaceFolder}/Cpp_Program/smartPtr/smartPtrUse.out",
-            "program": "${workspaceFolder}/Algorithm/graphStorage/graphStorage.t",
+            "program": "${workspaceFolder}/Algorithm/bfsGraph/bfsGraph.t",
            // "program": "${workspaceFolder}/Algorithm/swordtooffer/rebuildTree/rebuildTree.t",
             "args": [],
             "stopAtEntry": false,

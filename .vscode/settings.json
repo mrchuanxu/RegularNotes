@@ -4,6 +4,7 @@
         "new": "cpp",
         "chrono": "cpp",
         "random": "cpp",
-        "iostream": "cpp"
+        "iostream": "cpp",
+        "map": "cpp"
     }
 }
