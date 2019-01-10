@@ -119,3 +119,46 @@ char *gets(char *buf); //  成功，返回buf，尾端或出错，返回NULL
 char *fputs(constr char *restrict buf,FILE *restrict fp);
 char *puts(const char *buf); //  成功，返回非负值，尾端或出错，返回EOF
 ```
+原文再续就书接上一回。<br>
+这次讲一下二进制i/o<br>
+### 二进制io
+一次一个字符 putc和getc，一次一行字puts和gets，这两个函数记住了，那么今天来看一下fread和fwrite这两个函数，都是对二进制操作进行一次读或者一次写的完整结构，没必要一次读个1或者0吧😄。<br>
+```c
+#include <stdio.h>
+size_t fread(void *restrict ptr,size_t size,size_t nobj, FILE *restrict fp);
+size_t fwrite(const void *restrict ptr,size_t size,size_t nobj,FILE *restrict fp);
+// 返回值，读或写的对象数
+```
+怎么用呢？<br>
+惊奇的发现，原来标准io处理的都是文件指针指向的内容，而系统io处理的都是文件描述符指向的内容。<br>
+对于读的情况，判断是否到达文件末尾或文件错误，要调用ferror和feof两函数。对于写，返回少于nobj就会出错咯
+<br>
+在套接字一届会讲到相关的这个系统写，另一个系统读的情况，不同的系统有不同的系统对齐情况。所以需要分析准确对齐。<br>
+### 定位流
+就像定位系统io的文件偏移量一样（lseek），需要定位标准io流
+* ftell和fseek函数。
+* ftello和fseeko函数。SUS引入这两个函数，是文件偏移量用off_t数据类型代替长整型。<br>
+* fgetpos和fsetpos。使用一个抽象数据类型fpos_t记录文件位置。这种数据类型可以根据需要定义为一个足够大的数，用以记录文件位置。<br>
+需要移植到非unix系统上运行的应用程序应当使用fgetpos和fsetpos。<br>
+```c
+#include <stdio.h>
+long ftell(FILE *fp); // 成功，返回当前文件位置指示，出错返回 -1L
+int fseek(FILE *fp,long offset,int whence);// 成功返回0，出错，返回-1
+void rewind(FILE *fp);
+```
+这里的fseek竟然返回的不是文件的尾端，而是返回0，那我们怎么知道是文件的尾端呢？fseek只是显式地为一个打开的文件设置偏移量。whence就是文件起始，当前文件位置，文件尾端（那种意思咯）。<br>
+offset可以用ftell返回的，也可以用0；使用rewind可以将一个流设置到文件的起始位置<br>
+ftello和ftell相同，fseeko和fseek相同。<br>
+```c
+#include <stdio.h>
+int fgetpos(FILE* restrict fp,fpos_t *restrict pos);
+int fsetpos(FILE *fp,const fpos_t *pos);
+// 成功返回0，出错，返回非0
+```
+fgetpos将文件位置指示器的当前值存入由pos指向的对象中。(很明显，这里的pos要自己定义一下，然后跑了这函数，pos就知道文件指示器的当前值了)在以后调用fsetpos时，可以使用此值将流重新定位至该位置。<br>
+### 格式化io
+输出<br>
+![print](./img/print.png)<br>
+printf写到标准输出上，fprint写到指定流上，dprintf写至指定文件描述符，sprintf将格式化的字符送入数组buf中。<br>
+注意一下，sprintf在该数组的尾端自动加一个null字节，但该字符不包括在返回值中。（容易溢出，又安全隐患），用哪个snprintf就不一样，返回小于缓冲区长度n的正值，就没有截断输出。返回编码出错，就是负值。<br>
+2019 1 10🎂
