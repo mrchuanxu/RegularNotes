@@ -53,14 +53,18 @@ int main(){
     const int x = 7;
     const string s = "abcs";
     constexpr int xx = x;
-    // constexpr string ss = s;
-    // constexpr Point origo{0,0,1};
+    constexpr string ss = s;
+    constexpr Point origo{0,0,1};
     // constexpr int z = origo.x;
     // cout << z << endl;
 
-    constexpr Point a[]{
-        origo,Point{1,1},Point{2,2},origo.move(3,3);
-    }
+    // constexpr Point a[]{
+    //     origo,Point{1,1},Point{2,2},origo.move(3,3)
+    // };
+    constexpr const char *p1 = "asdf";
+    constexpr const char *p2 = p1;
+    //constexpr const char *p2 = p1+2; // 编译器不知道这类地址的常量值是多少
+    constexpr char c = p1[2];
     return 0;
 
 }
