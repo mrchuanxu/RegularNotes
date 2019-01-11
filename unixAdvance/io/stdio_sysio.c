@@ -1,22 +1,52 @@
-#include <stdio.h>
-#include <unistd.h>
-#include <errno.h>
 #include "../include/apue.h"
 
-FILE *fopen(const char *path,const char *mode);
-int fclose(FILE *fp); // 与fopen对应，使用完一个文件之后，就要调用fclose函数
-// 释放相关的资源，否则会造成内存泄漏。
-int fgetc(FILE *stream); // 从输入流stream中读取一个字符串回填到s所指向的空间
-char *fgets(char *s,int size,FILE *stream); // stream 通常是要么没有数据，要么一下子来一坨数据
+/***
+ * 为3个标准流
+ * 以及一个与普通文件相关联的流
+ * 打印有关缓冲的状态信息***/
 
-size_t fread(void *ptr,size_t size,size_t nmemb,FILE *stream);
+void pr_stdio(const char*,FILE *);
+int is_unbuffered(FILE *);
+int is_linebuffered(FILE*);
+int buffer_size(FILE*);
+
 int main(void){
-    FILE *fpth;
-    fpth = fopen("./iofile.c","r+");
-    if(fpth == NULL){
-        err_quit("error open file");  
-    }
-    fgetc(fpth);
-    fclose(fpth);
-    return 0;
+    FILE *fp; // 定义一个文件指针
+    fputs("enter any c\n",stdout); // 绑定到输出流
+    if(getchar()==EOF) // 读取输入流
+        err_sys("getchar error");
+    fputs("on line to standard error\n",stderr);
+
+    pr_stdio("stdin",stdin);
+    pr_stdio("stdout",stdout);
+    pr_stdio("stderr",stderr);
+
+    if((fp = fopen("./file.txt","r"))==NULL) // 只读方式打开一个文件
+        err_sys("fopen error");
+    if(getc(fp) == EOF) // 读取文件，一直读到末尾
+        err_sys("getc error");
+    pr_stdio("./file.txt",fp);
+    exit(0);
+}
+
+// 接下来看一下pr_stdio
+void pr_stdio(const char *name,FILE *fp){
+    printf("stream = %s,",name);
+    if(is_unbuffered(fp)) // 请往下看is_unbuffered函数
+        printf("unbuffered"); // 不带缓冲
+    else if(is_linebuffered(fp))
+        printf("line buffered"); // 行缓冲
+    else
+        printf("fully buffered"); // 全缓冲
+    printf(",buffer size = %d\n",buffer_size(fp));
+}
+
+int is_unbuffered(FILE *fp){
+    return (fp->_flags & __SNBF);
+}
+int is_linebuffered(FILE *fp){
+    return (fp->_flags & __SLBF);
+}
+int buffer_size(FILE *fp){
+    return (fp->_bf._size);
 }

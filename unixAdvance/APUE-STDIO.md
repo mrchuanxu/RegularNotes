@@ -162,3 +162,120 @@ fgetpos将文件位置指示器的当前值存入由pos指向的对象中。(很
 printf写到标准输出上，fprint写到指定流上，dprintf写至指定文件描述符，sprintf将格式化的字符送入数组buf中。<br>
 注意一下，sprintf在该数组的尾端自动加一个null字节，但该字符不包括在返回值中。（容易溢出，又安全隐患），用哪个snprintf就不一样，返回小于缓冲区长度n的正值，就没有截断输出。返回编码出错，就是负值。<br>
 2019 1 10🎂
+虽然dprintf不处理文件指针，但我们仍然把它包括在处理格式化输出的函数中。使用dprintf不需要调用fdopen将文件描述符转换成文件指针？fdopen函数的转换，将文件描述符转换成文件指针！（fprintf需要）怎么说，都是对文件的指针操作，操作指针指向的文件<br>
+格式说明控制其余参数如何编写，以后又如何显示。每个参数按照转换说明编写，转换说明 **以%开始。** <br>
+一个转换说明有4个可选择的部分`%[flags][fldwidth][precision][lenmodifier]convtype`<br>
+![tags](./img/conver.png)<br>
+fldwidth说明最小字段宽度。（一个非负十进制数）<br>
+precision说明整型转换后最少输出数字位数、浮点数转换后小数点的最小位数、字符串转换后的最大字节数。（.10|*）<br>
+hh,h,l,ll,j,z,t,L=>(lenmodifier说明参数长度)<br>
+转换说明中的转换类型<br>
+![转换说明](./img/detel.png)<br>
+输入<br>
+![格式化输入](./img/scanf.png)<br>
+若有一个字符不匹配，则停止后续处理<br>
+`%[*][fildwidth][m][lenmodifier]convtype`<br>
+可选择的星号（*）用于抑制转换。
+![转换类型](./img/scanfconv.png)<br>
+### 实现细节
+unix中，标准io库最终都要调用第三章的io例程。每个io流都有一个与其相关联的文件描述符，可以对一个流调用fileno以获得其描述符。<br>
+```c
+#include <stdio.h>
+int fileno(FILE *fp);// 获得与该流相关的文件描述符
+```
+终端输出是行缓冲，定向到文件是全缓冲，标准错误是不带缓冲直接输出。<br>
+```c
+#include "../include/apue.h"
+// 为3个标准流
+// 以及一个与普通文件相关联的流
+// 打印有关缓冲的状态信息
+void pr_stdio(const char*,FILE *);
+int is_unbuffered(FILE *);
+int is_linebuffered(FILE*);
+int buffer_size(FILE*);
+
+int main(void){
+    FILE *fp; // 定义一个文件指针
+    fputs("enter any c\n",stdout); // 绑定到输出流
+    if(getchar()==EOF) // 读取输入流
+        err_sys("getchar error");
+    fputs("on line to standard error\n",stderr);
+
+    pr_stdio("stdin",stdin);
+    pr_stdio("stdout",stdout);
+    pr_stdio("stderr",stderr);
+
+    if((fp = fopen("./file.txt","r"))==NULL) // 只读方式打开一个文件
+        err_sys("fopen error");
+    if(getc(fp) == EOF) // 读取文件，一直读到末尾
+        err_sys("getc error");
+    pr_stdio("./file.txt",fp);
+    exit(0);
+}
+
+// 接下来看一下pr_stdio
+void pr_stdio(const char *name,FILE *fp){
+    printf("stream = %s,",name);
+    if(is_unbuffered(fp)) // 请往下看is_unbuffered函数
+        printf("unbuffered"); // 不带缓冲
+    else if(is_linebuffered(fp))
+        printf("line buffered"); // 行缓冲
+    else
+        printf("fully buffered"); // 全缓冲
+    printf(",buffer size = %d\n",buffer_size(fp));
+}
+
+int is_unbuffered(FILE *fp){
+    return (fp->_flags & __SNBF);
+}
+int is_linebuffered(FILE *fp){
+    return (fp->_flags & __SLBF);
+}
+int buffer_size(FILE *fp){
+    return (fp->_bf._size);
+}
+```
+### 临时文件
+创建临时文件<br>
+```c
+#include <stdio.h>
+char *tmpnam(char *ptr);
+// 返回指向唯一路径名的指针
+FILE *tempfile(void);
+// 成功，返回文件指针，出错，返回NULL
+```
+tmpnam，产生一个与现有文件名不同的一个有效路径名字符串。调用都会产生不同的路径名。(TMP_MAX次)<br>
+注意，若ptr是null，则所产生的路径名存放在一个静态区中，指向该静态区的指针作为函数值返回。后续调用tmpnam，会重写该静态区。（意味着什么呢？调用函数多次，而且想保存路径名，则我们应该保存该路径名的副本，而不是指针的副本， **因为指针指向的静态区会被重写！！！**）<br>
+若非null，则认为它应该是指向长度至少是L_tmpnam个字符的数组，所产生的路径名存放在该数组中，ptr也作为函数值返回。<br>
+tmpfile创建一个临时二进制文件(wb+),关闭该文件或程序结束就会自动(auto)删除。<br>
+```c
+#include "../include/apue.h"
+
+
+int main(void){
+    // if(lseek(STDIN_FILENO,0,SEEK_CUR)==-1)  //   测试为-1而不是0
+    //     printf("can't seek");
+    // else
+    //     printf("seek ok!");
+    char *str = "123abc456";
+    int i = 0;
+    i = atoi(str);
+    printf("%d\n",i);
+    char name[L_tmpnam],line[MAXLINE];
+    FILE *fp;
+    printf("%s\n",tmpnam(NULL));
+    tmpnam(name);
+    printf("%s\n",name);
+
+    if((fp=tmpfile())==NULL) // 创建一个临时文件
+        err_sys("tmpfile error");
+    fputs("one line of output\n",fp); // 写到临时文件
+    rewind(fp); // read it back
+    if(fgets(line,sizeof(line),fp)==NULL)
+        err_sys("fgets error");
+    fputs(line,stdout);
+    exit(0);
+}
+```
+效果
+![tempfile效果图](./img/tmpfile.png)
