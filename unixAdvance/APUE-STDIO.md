@@ -161,13 +161,13 @@ fgetpos将文件位置指示器的当前值存入由pos指向的对象中。(很
 ![print](./img/print.png)<br>
 printf写到标准输出上，fprint写到指定流上，dprintf写至指定文件描述符，sprintf将格式化的字符送入数组buf中。<br>
 注意一下，sprintf在该数组的尾端自动加一个null字节，但该字符不包括在返回值中。（容易溢出，又安全隐患），用哪个snprintf就不一样，返回小于缓冲区长度n的正值，就没有截断输出。返回编码出错，就是负值。<br>
-2019 1 10🎂
+2019 1 10🎂<br>
 虽然dprintf不处理文件指针，但我们仍然把它包括在处理格式化输出的函数中。使用dprintf不需要调用fdopen将文件描述符转换成文件指针？fdopen函数的转换，将文件描述符转换成文件指针！（fprintf需要）怎么说，都是对文件的指针操作，操作指针指向的文件<br>
 格式说明控制其余参数如何编写，以后又如何显示。每个参数按照转换说明编写，转换说明 **以%开始。** <br>
 一个转换说明有4个可选择的部分`%[flags][fldwidth][precision][lenmodifier]convtype`<br>
 ![tags](./img/conver.png)<br>
 fldwidth说明最小字段宽度。（一个非负十进制数）<br>
-precision说明整型转换后最少输出数字位数、浮点数转换后小数点的最小位数、字符串转换后的最大字节数。（.10|*）<br>
+precision说明整型转换后最少输出数字位数、浮点数转换后小数点的最小位数、字符串转换后的最大字节数。（ .10|* ）<br>
 hh,h,l,ll,j,z,t,L=>(lenmodifier说明参数长度)<br>
 转换说明中的转换类型<br>
 ![转换说明](./img/detel.png)<br>
@@ -175,7 +175,7 @@ hh,h,l,ll,j,z,t,L=>(lenmodifier说明参数长度)<br>
 ![格式化输入](./img/scanf.png)<br>
 若有一个字符不匹配，则停止后续处理<br>
 `%[*][fildwidth][m][lenmodifier]convtype`<br>
-可选择的星号（*）用于抑制转换。
+可选择的星号（ * ）用于抑制转换。
 ![转换类型](./img/scanfconv.png)<br>
 ### 实现细节
 unix中，标准io库最终都要调用第三章的io例程。每个io流都有一个与其相关联的文件描述符，可以对一个流调用fileno以获得其描述符。<br>
@@ -277,5 +277,74 @@ int main(void){
     exit(0);
 }
 ```
-效果
-![tempfile效果图](./img/tmpfile.png)
+效果<br>
+![tempfile效果图](./img/tmpfile.png)<br>
+Single UNIX Specification<br>
+```c
+#include <stdlib.h>
+char *mkdtemp(char *template); // 成功，返回指向目录名的子贞，出错，返回null
+int mkstemp(char *template); // 成功返回文件描述符；出错，返回-1
+```
+mkdtemp函数创建了一个目录，该目录有一个唯一的名字；mkstemp函数创建了一个文件，该文件有一个唯一的名字。名字是通过template字符串进行选择的。这个字符串是后6位设置为路径名。<br>
+函数将这些占位符替换成不同的字符来构件一个唯一的路径名。如果成功的话，这两个函数将修改template字符串临时文件的名字。<br>
+由mkdtemp函数创建的目录使用下列访问权限位集: S_IRUR|S_IWUSR|S_IXUSR。⚠️ 调用进程的文件模式创建屏蔽字可以进一步限制这些权限。如果目录创建成功，mkdtemp返回新目录的名字。<br>
+mkstemp函数以唯一的名字创建一个普通文件并且打开该文件，该函数返回的文件描述符以读写方式打开。由mkstemp创建的文件使用访问权限位S_IRUSR|S_IWUSR<br>
+与tempfile不同，mkstemp创建的临时文件并不会自动删除。如果希望从文件系统命名空间中删除该文件，必须自己对它接触链接🔗。<br>
+最好使用tempfile和mkstemp函数，不存在时间窗口问题。<br>
+### 内存流
+内存流，用文件指针访问，但是并没有底层文件，只是一个io流。**所有的io都是通过缓冲区与主存之间来回传送字节完成的**。
+```c
+#include <stdio.h>
+FILE *fmemopen(void *restict buf,size_t size,const char *restrict type); // 返回流指针，错误，返回null
+```
+fmemopen允许调用者提供缓冲区用于内存流：buf参数指向缓冲区开始的位置，size参数制定了缓冲区大小的字节数。<br>
+* 有一种情况，如果buf参数为空，fmemopen函数分配size字节数的缓冲区，流关闭时缓冲区会被释放掉。释放掉，buf为空就释放掉。<br>
+type参数跟fopen的参数可以对比一下<br>
+![内存流type参数](./img/fmemopentype.png)<br>
+看到微小的差别了吗？
+* 无论合适以追加写方式打开内存流时，当前文件位置设为缓冲区中的第一个null字节。没有null，就缓冲区结尾的后一个字节。<br>
+不是追加写方式打开，就会把当前位置设为缓冲区的开始位置（开始位置）因为null，所以不适合二进制数据<--（可能多个null）<br>
+* buf是一个null指针，打开流读或写都没有任何意义。<br>
+* 任何时候，需要增加流缓冲区中数据量以及调用fclose、fflush、fseek、fseeko以及fsetpos时都会在当前位置写入一个null字节。<br>
+先写一段代码来过过瘾<br>
+```c
+#include "../include/apue.h"
+
+#define BSZ 48
+
+int main(){
+    FILE *fp;
+    char buf[BSZ];
+    memset(buf,'a',BSZ-2); // 在buf指定的缓冲区设置BSZ-2字节，每个初始化为a
+    buf[BSZ-2] = '\0';
+    buf[BSZ-1] = 'x';
+    if((fp=fmemopen(buf,BSZ,"w+"))==NULL)
+        err_sys("fmemopen failed");
+    printf("initial buffer contetnts:%s\n",buf);
+    fprintf(fp,"hello,world");
+    printf("brfore flush:%s\n",buf);// 在没有flush之前是怎样的
+    fflush(fp);
+    printf("after fflush:%s\n",buf);
+    printf("len of streing in buf = %ld\n",(long)strlen(buf)); // 
+    
+    memset(buf,'b',BSZ-2);
+    buf[BSZ-2] = '\0';
+    buf[BSZ-1] = 'x';
+    fprintf(fp,"hello world");
+    fseek(fp,0,SEEK_SET); // 显式地为一个打开文件设置一个偏移量
+    printf("after fseek:%s\n",buf);
+    printf("len of string in buf = %ld\n",(long)strlen(buf)); // 
+
+    memset(buf,'c',BSZ-2); // 用c改写缓冲区
+    buf[BSZ-2] = '\0';
+    buf[BSZ-1] = 'x';
+    fprintf(fp,"hello world"); // 写到指定的流上
+    fclose(fp); // 关闭流
+    printf("after fclose:%s\n",buf);
+    printf("len of string in buf = %ld\n",(long)strlen(buf)); // 
+    exit(0);
+    // 在mac ox unix没有对上这些的输出，所以，这又linux3.2.0支持内存流，其他没跟上
+}
+```
+#### 习题
+对标准io流如何使用fsync函数？<br>
