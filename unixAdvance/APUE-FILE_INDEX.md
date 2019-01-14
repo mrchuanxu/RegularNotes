@@ -108,3 +108,58 @@ st_mode的值也是包含了对文件的访问权限位。所有文件类型都�
 ![文件访问权限](./img/authority.png)<br>
 文件所有者可以用chmod命令修改这9个权限位。u表示用户，g表示组，o表示其他<br>
 未完待续。。。2019 1 13
+续。<br>
+规则：
+* 打开任一类型文件，需要对所有的目录以及可能隐藏的目录执行权限。<br>
+所以这就是为什么对于木枯其执行权限位常被称为搜索位的原因。<br>
+举个🌰。/usr/include/stdio.h，就要对目录/、/usr和/usr/include具有执行权限，然后具有对文件本身的适当权限，取决于以何种模式打开它。<br>
+也就是说，这是一个需要一关一关闯的过程。<br>
+* 对于一个文件的读权限决定了我们是否能够打开现有文件进行读操作。这与open函数的 **O_RDONLY和O_RDWR**标志相关。<br>
+* 对于一个文件的写权限决定了我们能不能写入。与open函数的 **O_WRONLY和O_RDWR**标志相关<br>
+* 若要用open函数对一个文件指定O_TRUNC标志，必须对该文件具有 **写**权限。<br>
+* 要创建一个新文件，就需要对这个目录有 **写和执行**的权限。<br>
+* 删除一个现有的文件，必须有 **写和执行**的权限<br>
+* 如果7个(没错就是7个)exec函数中的任何一个执行某个文件，都必须有 **执行**的权限。<br>
+其实进程打开、创建或删除一个文件时，内核就进行文件访问权限的测试，而这种测试可能涉及文件的所有者(文件性质) **(st_uid)和(st_gid)**、进程的 **有效ID(uid和gid)以及进程的附属组ID(进程性质)。<br>
+内核进行的测试具体如下：<br>
+1. 进程有效用户ID是0，超级用户。
+2. 进程有效用户ID是文件所有者，有适当的权限位被设置，允许访问，否则拒绝❌。1
+3. 进程的有效组ID或进程附属组ID旨意等于文件组ID，那么如果组的适当访问权限被设置，就允许，否则❌。
+4. 其他用户也一样。
+### 新文件和目录的所有权
+1. 新文件的用户ID设置为进程的有效用户ID。
+2. 新文件的组ID可以是它所在目录的组ID。
+###函数access和faccessat
+```c
+#include <unistd.h>
+int access(const char *pathname,int mode);
+int faccessat(int fd,const char *pathname,int mode,int flag);
+// 成果返回0，出错返回-1
+```
+open函数打开一个文件，内核以进程的有效用户ID和有效组ID为基础执行其访问权限测试。但是，有时候，进程也希望按其实际用户ID和实际组ID来测试其访问能力。<br>
+所以上述两个函数就是为了测试是不是可以访问的。例如mode的设置 R_OK？W_OK？X_OK?<br>
+```c
+#include "../include/apue.h"
+#include <fcntl.h>
+
+int main(int argc,char *argv[]){
+    if(argc!=2)
+        err_quit("usage:statfunc.t < pathname>\n");
+    if(access(argv[1],R_OK)<0) // 这里就展示了怎么用
+        err_ret("access error for %s",argv[1]);
+    else
+        printf("read access OK\n");
+    if(open(argv[1],O_RDONLY)<0) 
+    //  虽然能打开，但是通过设置用户ID程序修改能不能正常读。
+        err_ret("open error for %s",argv[1]);
+    else
+        printf("open for reading OK\n");
+    exit(0);
+}
+```
+### umask 创建屏蔽字
+```c
+#include <sys/stat.h>
+mode_t umask(mode_t cmask); // 之前文件模式创建屏蔽字
+```
+为什么要创建屏蔽字？
