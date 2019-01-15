@@ -22,6 +22,7 @@ class GraphOperator
 {
     // 存储图结构 根据值获取相应的链表
     map<T, multiset<T, greater<T> > > mGraph;
+    // 这里使用vector<shared_ptr<Node>> edges //会解决释放内存资源的问题  
     void recurDfs(T &s,T &t,map<T,T*>&,map<T,bool>&);
     bool found = false;
   public: // 为外部提供接口

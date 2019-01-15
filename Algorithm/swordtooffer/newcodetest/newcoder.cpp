@@ -50,13 +50,37 @@ public:
         root->right = reConstructBinaryTree(rpre,rvin); // 递归右子树
         return root;
     }
+    int jumpRecur(int number,int m){
+        if(number==1||m == 1) return 1;
+        if(number <1|| m < 1) return 0;
+        if(number < m) return jumpRecur(number,number);
+        if(number == m) return jumpRecur(number,m-1)+1;
+        return jumpRecur(number,m-1)+jumpRecur(number-m,m);
+    }
 };
+    int  NumberOf1(int n) {
+         int count = 0;
+         while(n){
+             n=n-1;
+             if(n&1)
+                 ++count;
+         }
+         return count;
+     }
 
 int main(){
-    vector<int> pre{1,2,4,7,3,5,6,8};
-    vector<int> vin{4,7,2,1,5,3,8,6};
-    Solution so;
-    TreeNode *root;
-    root = so.reConstructBinaryTree(pre,vin);
+    // vector<int> pre{1,2,4,7,3,5,6,8};
+    // vector<int> vin{4,7,2,1,5,3,8,6};
+    // Solution so;
+    // TreeNode *root;
+    // root = so.reConstructBinaryTree(pre,vin);
+    // int sum = 0;
+    // for(int i = 3;i>=1;--i){
+    //     sum += so.jumpRecur(3,i);
+    //     //cout << sum << endl;
+    // }
+    // cout << sum+1 << endl;
+    int i = 8&1;
+    cout << "f" << i << endl;
     return 0;
 }
