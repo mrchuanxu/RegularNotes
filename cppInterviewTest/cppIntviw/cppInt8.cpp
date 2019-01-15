@@ -21,7 +21,7 @@ unique_ptr<int> clone(int p){
 template <class T>
 void f1(initializer_list<T>);
 
-void err_msg(initializer_list<string> il){
+void err_msg(initializer_list<string> il){ // 这是形参列表
     for(auto beg = il.begin();beg!=il.end();++beg){
         cout << *beg << " ";
         cout << endl;
@@ -35,6 +35,10 @@ void error_msg(int e,initializer_list<string> il){
     }
     cout << endl;
 }
+// ...省略符形参 只能出现在形参列表最后的一个位置 printf就是使用省略符号参数的典型例子。
+// printf("%d%s%f",int,char*,float);
+
+
 int main(){
     err_msg({"hahah","str","hhh"});
     // unique_ptr<int []> ptr(make_sequence(9).release());

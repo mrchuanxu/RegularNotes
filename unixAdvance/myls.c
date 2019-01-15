@@ -1,16 +1,16 @@
 #include "include/apue.h"
-#include <dirent.h>
+#include <fcntl.h>
+#define RWRWRW (S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH|S_IWOTH)
 
 int main(int argc,char* argv[]){
-    DIR *dp;
-    struct dirent *dirp;
-    if(argc !=2)
-        err_quit("Usage:is directory_name");
-    if((dp = opendir(argv[1]))==NULL)
-        err_sys("can't open %s",argv[1]);
-    while((dirp = readdir(dp))!=NULL)
-        printf("%s\n",dirp->d_name);
-    printf("%s\n",argv[1]);
-    closedir(dp);
-    exit(main(argc,argv));
+    umask(0);
+    if(creat("foo",RWRWRW)<0)
+        err_sys("creat error for foo");
+    umask(S_IRGRP|S_IWGRP|S_IROTH|S_IWOTH); // umask禁止所有组和其他用户的访问权限
+    if(creat("bar",RWRWRW)<0)
+        err_sys("creat error for bar");
+    exit(0);
 }
+/***
+ * 所以实际上，umask是用来禁止权限的
+ * ***/

@@ -160,6 +160,100 @@ int main(int argc,char *argv[]){
 ### umask 创建屏蔽字
 ```c
 #include <sys/stat.h>
-mode_t umask(mode_t cmask); // 之前文件模式创建屏蔽字
+mode_t umask(mode_t cmask); // 返回之前的文件模式创建屏蔽字
 ```
-为什么要创建屏蔽字？
+cmode是由9个权限位按位或"|"构成。<br>
+为什么要创建屏蔽字？<br>
+st_mode屏蔽，通过S_IRUSR使用户只读，S_IWUSR 使用户只写...那么每个文件都会有相关联的9个访问权限位，而在此基础上，我们可以说明与每个进程相关联的文件模式创建屏蔽字。<br>
+有什么用？<br>
+```c
+#include "include/apue.h"
+#include <fcntl.h>
+#define RWRWRW (S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH|S_IWOTH)
+
+int main(int argc,char* argv[]){
+    umask(0);
+    if(creat("foo",RWRWRW)<0)
+        err_sys("creat error for foo");
+    umask(S_IRGRP|S_IWGRP|S_IROTH|S_IWOTH); // umask禁止所有组和其他用户的访问权限
+    if(creat("bar",RWRWRW)<0)
+        err_sys("creat error for bar");
+    exit(0);
+}
+/***
+ * 所以实际上，umask是用来禁止权限的
+ * ***/
+```
+所以umask是用来屏蔽权限位！按位或计算构成多个模式<br>
+在编写创建新文件的程序时，如果我们想确保任何用户都能读文件，则应将umask设置为0.否则，当我们的进程运行时，有效的umask值可能关闭该权限位。<br>
+umask的值越大，权限越低。<br>
+### 函数chmod、fchmod和fchmodat 更改权限
+```c
+#include <sys/stat.h>
+int chmod(const char *pathname,mode_t mode);
+int fchmod(int fd,mode_t mode);
+int fchmodat(int fd,const char* pathname,mode_t mode,int flag); // 成功返回0，出错返回-1
+```
+![按位或求mode](./img/mode_t.png)<br>
+```c
+struct stat statbuf;
+if(stat("foo",&statbuf)<0)
+    err_sys("stat error for foo");
+if(chmod("foo",(statbuf.st_mode & ~S_IXGRP)|S_ISGID)<0)
+    err_sys("chmod error for foo");
+    // 这里就是修改了权限位了！ 用组合常量模式修改
+ if(chmod("bar",S_IRUSR|S_IWUSR|S_IRGRP|S_IROTH)<0) // 用正常的权限位进行修改权限
+     err_sys("chmod error for bar");
+exit(0);
+```
+调用stat获得当前权限，然后修改它。惯例<br>
+chmod函数更新的只是i节点最近一次被更改的时间。按系统默认方式，ls -l列出的是最后修改文件内容的时间。<br>
+### 来看一下粘着位 S_ISVTX位
+什么是粘着位？S_ISVTX位。粘着位是在早期的 Unix 系统中为常用的可执行程序（bin）设置的，这样可以将使用频繁的程序驻留在内存中。现在 Unix 使用了 Page Cache 技术，可以使常用的数据块驻留在内存中了，所以粘着位的作用越来越弱化了。
+### 函数chown、fchown、fchownat和lchown 用于更改文件的用户ID和组ID
+```c
+#include <unistd.h>
+int chown(const char* pathname,uid_t owner,gid_t group);
+int fchown(int fd,uid_t owner,gid_t group);
+int fchownat(int fd,const char* pathname,uid_t owner,gid_t group,int flag);
+int lchown(const char *pathname,uid_t owner,gid_t group);
+// 0 与 -1 经典
+```
+可以看出函数的参数类型都有uid_t和gid_t，用户id和组id。<br>
+⚠️ 修改文件权限的事只能超级用户可以做，其他普通用户不可以！<br>
+有一个🌰，是借鉴过来的，比较通俗易懂<br>
+假设系统中有 A 和 B 两个用户，而系统对用户磁盘进行了配额限制。如果 chown(2) 这件事任何人都可以做，那么当 A 用户的磁盘配额不够用的时候，他就可以创建一个具有 0777 权限的文件夹，然后将这个文件夹的所有者修改为 B 用户，这样自己依然可以使用这个文件夹，但是却绕过了磁盘配额的限制，将帐算在了 B 用户的头上。
+
+所以为了安全起见， chown(2) 只能由超级用户来做，普通用户不仅无法修改别人文件的所有者，也无权修改自己文件的所有者。<br>
+### 文件长度
+**stat结构成员st_size表示以字节为单位的文件长度** 。此字段只对普通文件、目录文件和符号链接有意义。<br>
+* 普通文件。长度可以是0
+* 目录，长度就是一个数(如16或512)的整数倍。
+* 符号链接，文件长度是在文件名中的实际子节数
+### 文件中的空洞
+提及的普通文件可以包含空洞，就是由所设置的偏移量超过文件尾端，并写入了某些数据后造成这中间的一部分空洞。<br>
+就是结合上面就是查到了长度很长，但是大小就不一样，很大的字节块，就表示出，这文件很多空洞。<br>
+```
+car file > file.copy
+ls -l file*  // 可以查看
+```
+这样file的空洞就被填满，并且都填为0<br>
+### 文件截断 truncate和ftruncate
+```c
+#include <unistd.h>
+int truncate(const char *pathname,off_t length);
+int ftruncate(int fd,off_t length);
+// 0与-1 经典
+```
+有时候，有时候，我们需要在文件尾端处截取一些数据以缩短文件。这两函数。将一个现有文件长度截断为length。<br>
+* 如果 length 参数小于文件之前的长度，则 length 个字节后面的数据将被丢弃。
+* 如果 length 参数大于文件之前的长度，则在文件末尾用 '\0' 填充，使文件达到 length 指定的长度，也就是在文件的尾部创建了一个空洞。
+### 文件系统 UFS
+FAT 是大家所熟悉的 Dos 文件系统，它是顺序存储的单链表结构，所以单链表的缺点就是 FAT 文件系统的缺点。只能从前往后访问，不能反向访问，而且无法管理大文件。<br>
+UFS 文件系统是一个与 FAT 同时代的 Unix 文件系统，但是 UFS 文件系统却是与 FAT 完全不同的文件系统，它可以很好的支持大文件，但小文件的管理却是它的弱点。<br>
+下面我们介绍一下 UFS 文件系统。<br>
+目录也是一个文件， 它存储的内容是一个个的目录项，而每一个目录项记录的是目录中文件的 inode 和文件名等信息<br>
+![目录也是文件](./img/index.jpg)<br>
+UFS是以Berkeley快速文件系统为基础的。<br>
+尝试把一个磁盘分成一个或多个分区。每个分区可以包含一个文件系统。i节点是固定长度的记录项，包含有关文件的大部分信息。<br>
+![磁盘、分区和文件系统](./img/dipareas.png)<br>
