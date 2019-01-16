@@ -83,18 +83,32 @@ bool deleteElement(singleLink *head, int n){
 }
 
 // 翻转链表
-singleLink* reverseLink(singleLink *head, singleLink *reveseNode){
-  if(head == NULL)
-      return head;
-  if(head->ctr == NULL)
-      head = head->next;
-  auto tmp = head->next;
-  head->next = reveseNode;
-  if(tmp){
-    return reverseLink(tmp,head);
-  }else{
-    return head;
-  }
+// singleLink* reverseLink(singleLink *head, singleLink *reveseNode){
+//   if(head == NULL)
+//       return head;
+//   if(head->ctr == NULL)
+//       head = head->next;
+//   auto tmp = head->next;
+//   head->next = reveseNode;
+//   if(tmp){
+//     return reverseLink(tmp,head);
+//   }else{
+//     return head;
+//   }
+// }
+// 反转 非递归
+singleLink* reverseLink(singleLink *pHead){
+  if(pHead == nullptr) return nullptr;
+        singleLink *pNew;
+        singleLink *pTmp;
+        while(pHead){
+            pTmp = pHead->next;
+            pHead->next = pNew;
+            pNew = pHead;
+            pHead = pTmp;
+        }
+        pHead = pNew;
+        return pHead;
 }
 // 检测回文字符串
 bool verifyPalindrome(singleLink *head,singleLink *mid){
@@ -177,16 +191,21 @@ int main(){
   rlsit = initSingleLink();
   rlsit = insertRail(rlsit,"123678");
   head = mergeTwoLink(head,rlsit);
-  while(head){
-    cout << head->ctr << endl;
-    head = head->next;
-  }
+  // while(head){
+  //   cout << head->ctr << endl;
+  //   head = head->next;
+  // }
+  // head = 
   // singleLink *mid = new singleLink();
   // mid = midleNode(head);
 
   // //if(insertElement(head,4,'D')){
-  // singleLink *reveseNode = new singleLink();
-  // reveseNode = reverseLink(mid,reveseNode);
+  singleLink *reveseNode = new singleLink();
+  reveseNode = reverseLink(head);
+  while(reveseNode){
+    cout << reveseNode->ctr << endl;
+    reveseNode = reveseNode->next;
+  }
   // if(verifyPalindrome(head,reveseNode)){
   //   cout << "yes,is palindrome" << endl;
   // }else{

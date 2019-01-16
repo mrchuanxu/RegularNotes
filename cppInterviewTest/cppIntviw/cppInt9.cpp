@@ -5,7 +5,6 @@
 #include <vector>
 
 using namespace std;
-// 实现数据共享
 
 class StrBlob{
     public:

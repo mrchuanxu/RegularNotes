@@ -10,7 +10,7 @@
         "request": "attach",
         // "program": "${workspaceFolder}/Cpp_Program/smartPtr/smartPtrUse.out",
         //"program": "${workspaceFolder}/Algorithm/bfsGraph/bfsGraph.t",
-        "program": "${workspaceFolder}/Algorithm/swordtooffer/newcodetest/newcoder.t",
+        "program": "${workspaceFolder}/Algorithm/singleLinkOper/singleLinkOper.t",
         "processId": "${command:pickProcess}",
         "MIMode": "lldb"
       },
@@ -20,7 +20,7 @@
             "request": "launch",
             //"program": "${workspaceFolder}/Cpp_Program/smartPtr/smartPtrUse.out",
             //"program": "${workspaceFolder}/Algorithm/bfsGraph/bfsGraph.t",
-            "program": "${workspaceFolder}/Algorithm/swordtooffer/newcodetest/newcoder.t",
+            "program": "${workspaceFolder}/Algorithm/singleLinkOper/singleLinkOper.t",
             "args": [],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
