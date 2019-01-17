@@ -5,6 +5,7 @@
         "chrono": "cpp",
         "random": "cpp",
         "iostream": "cpp",
-        "map": "cpp"
+        "map": "cpp",
+        "memory": "cpp"
     }
 }

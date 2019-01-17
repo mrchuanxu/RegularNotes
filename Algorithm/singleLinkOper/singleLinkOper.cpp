@@ -155,57 +155,68 @@ singleLink* midleNode(singleLink *head){
     // delete pf;
 }
 // 两个有序链表合并  空间复杂度 O(1) 时间复杂度 O(n)
-singleLink* mergeTwoLink(singleLink* llist,singleLink *rlist){
-  if(llist == NULL && rlist!= NULL)
-      return rlist;
-  else if(rlist == NULL && llist!= NULL)
-      return llist;
-  
-  auto head = llist;
-  while(head->next&&rlist){
-      // 相当于插入
-      auto tmpllist = head->next;
-        if(tmpllist->ctr >= rlist->ctr){
-          auto tmprlist = rlist;
-          rlist = rlist->next;
-          tmprlist->next = tmpllist;
-          head->next = tmprlist;
-        }else if(head->ctr < rlist->ctr){
-          head = head->next;
+    singleLink* Merge(singleLink* pHead1, singleLink* pHead2)
+    { 
+        if(pHead1==nullptr||pHead2==nullptr) return nullptr;
+        // 合并，就合并，不需要新增加什么
+        singleLink* p1;
+        singleLink* p2;
+        singleLink* tHead;
+        if(pHead1->ctr>pHead2->ctr){
+            tHead = pHead2;
+            p1 = pHead2; // p1是第一条链表
+            p2 = pHead1;
+        }else{
+            tHead = pHead1;
+            p1 = pHead1; // p1是第一条链表
+            p2 = pHead2;
         }
+        singleLink* tmp;
+        while(p1&&p2){
+            if(p1->ctr <= p2->ctr){
+                if(p1->next->ctr>p2->ctr){
+                    tmp = p2->next;
+                    p2->next = p1->next;
+                    p1->next = p2;
+                    if(tmp != nullptr)
+                         p2 = tmp; // p2往后走
+                    else
+                        p2 = nullptr;
+                }
+            }
+            p1=p1->next;
+            if(p1->next == nullptr&&p2!=nullptr){
+                p1->next = p2;
+                break;
+            }else if(p2==nullptr) break;
+        }
+        pHead1 = tHead;
+        return pHead1;
   }
-  //  剩余rlist 都是比llist的数字大，所以直接插到后面即可
-  while(rlist){
-    head->next = rlist;
-    rlist = rlist->next;
-    head = head->next;
-  }
-  return llist;
-}
 
 int main(){
   singleLink *head = new singleLink();
   head = initSingleLink();
-  head = insertRail(head,"45689");
+  head = insertRail(head,"12");
   singleLink *rlsit = new singleLink();
   rlsit = initSingleLink();
-  rlsit = insertRail(rlsit,"123678");
-  head = mergeTwoLink(head,rlsit);
-  // while(head){
-  //   cout << head->ctr << endl;
-  //   head = head->next;
-  // }
+  rlsit = insertRail(rlsit,"45689");
+  head = Merge(head,rlsit);
+  while(head){
+    cout << head->ctr << endl;
+    head = head->next;
+  }
   // head = 
   // singleLink *mid = new singleLink();
   // mid = midleNode(head);
 
   // //if(insertElement(head,4,'D')){
-  singleLink *reveseNode = new singleLink();
-  reveseNode = reverseLink(head);
-  while(reveseNode){
-    cout << reveseNode->ctr << endl;
-    reveseNode = reveseNode->next;
-  }
+  // singleLink *reveseNode = new singleLink();
+  // reveseNode = reverseLink(head);
+  // while(reveseNode){
+  //   cout << reveseNode->ctr << endl;
+  //   reveseNode = reveseNode->next;
+  // }
   // if(verifyPalindrome(head,reveseNode)){
   //   cout << "yes,is palindrome" << endl;
   // }else{
