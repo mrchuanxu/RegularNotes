@@ -12,7 +12,7 @@ int main(int argc,char *argv[]){
         }
         if(S_ISREG(buf.st_mode))
             ptr = "regular";
-        else if(S_ISDIR(buf.st_mode))
+        else if(S_ISDIR(buf.st_mode)) // 使用宏判断是否为目录
             ptr = "directory";
         else if(S_ISCHR(buf.st_mode))
             ptr = "charactrt special";

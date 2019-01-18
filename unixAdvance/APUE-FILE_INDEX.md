@@ -43,6 +43,7 @@ int main(int argc,char *argv[]){
 ```
 这段例子说明什么呢，说明了stat函数是结合着使用st_mode和S_ISxxx系列的标志符号判断来使用的。那我们来看看stat这个struct都有什么<br>
 ![stat的结构体](./img/stat.png)<br>
+(引:在linux，一个文件实际占用了多大的磁盘空间要看st_blocks的数量，而不是看st_size的大小，两个的差别可以通过调用这俩来查看。一般情况下，一个文件系统的一个block是4KB，而每个st_block是512B，所以一个有效文件占用的磁盘的空间至少为8个st_blocks。8*512B)<br>
 这里面有一个struct timespec st_atime，st_mtime，st_ctime等。分别是最后访问时间，最后修改时间，最后的文件修改状态时间。都是按秒(time_t tv_sec)和纳秒(long tv_nsec)<br>
 系统中使用stat函数最多的地方就是ls -l，因为真的会获取一个文件所有的相关信息。<br>
 ### 文件类型
@@ -98,7 +99,7 @@ int main(int argc,char *argv[]){
 使用lstat来检测符号链接，而stat没有这个功能。<br>
 ### 设置用户ID和设置组ID
 与一个进程相关联的ID有大于等于6个。<br>
-![进程相关联的ID](./img/related.png)<br>
+![进程相关联的ID](./img/relatedID.png)<br>
 通常，有效用户ID等于实际用户ID，有效组ID等于实际组ID<br>
 每个文件有一个所有者和组所有者（own by two），所有者由stat结构中的st_uid指定，组所有者则由st_gid指定。<br>
 set-user-ID和set-group-ID<br>
@@ -252,7 +253,7 @@ int ftruncate(int fd,off_t length);
 FAT 是大家所熟悉的 Dos 文件系统，它是顺序存储的单链表结构，所以单链表的缺点就是 FAT 文件系统的缺点。只能从前往后访问，不能反向访问，而且无法管理大文件。<br>
 UFS 文件系统是一个与 FAT 同时代的 Unix 文件系统，但是 UFS 文件系统却是与 FAT 完全不同的文件系统，它可以很好的支持大文件，但小文件的管理却是它的弱点。<br>
 下面我们介绍一下 UFS 文件系统。<br>
-目录也是一个文件， 它存储的内容是一个个的目录项，而每一个目录项记录的是目录中文件的 inode 和文件名等信息<br>
+目录也是一个文件， 它存储的内容是一个个的目录项，而每一个目录项记录的是目录中文件的 inode 和文件名等信息（存储的不是文件数据，而是文件的信息）<br>
 ![目录也是文件](./img/index.jpg)<br>
 UFS是以Berkeley快速文件系统为基础的。<br>
 尝试把一个磁盘分成一个或多个分区。每个分区可以包含一个文件系统。i节点是固定长度的记录项，包含有关文件的大部分信息。<br>
