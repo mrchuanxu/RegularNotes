@@ -155,40 +155,67 @@ singleLink* midleNode(singleLink *head){
     // delete pf;
 }
 // 两个有序链表合并  空间复杂度 O(1) 时间复杂度 O(n)
-    singleLink* Merge(singleLink* pHead1, singleLink* pHead2)
-    { 
-        if(pHead1==nullptr||pHead2==nullptr) return nullptr;
-        // 合并，就合并，不需要新增加什么
-        singleLink* p1;
-        singleLink* p2;
-        singleLink* tHead;
-        if(pHead1->ctr>pHead2->ctr){
-            tHead = pHead2;
-            p1 = pHead2; // p1是第一条链表
-            p2 = pHead1;
-        }else{
-            tHead = pHead1;
-            p1 = pHead1; // p1是第一条链表
-            p2 = pHead2;
-        }
+  //   singleLink* Merge(singleLink* pHead1, singleLink* pHead2)
+  //   { 
+  //       if(pHead1==nullptr||pHead2==nullptr) return nullptr;
+  //       // 合并，就合并，不需要新增加什么
+  //       singleLink* p1;
+  //       singleLink* p2;
+  //       singleLink* tHead;
+  //       if(pHead1->ctr>pHead2->ctr){
+  //           tHead = pHead2;
+  //           p1 = pHead2; // p1是第一条链表
+  //           p2 = pHead1;
+  //       }else{
+  //           tHead = pHead1;
+  //           p1 = pHead1; // p1是第一条链表
+  //           p2 = pHead2;
+  //       }
+  //       singleLink* tmp;
+  //       while(p1&&p2){
+  //           if(p1->ctr <= p2->ctr){
+  //               if(p1->next->ctr>p2->ctr){
+  //                   tmp = p2->next;
+  //                   p2->next = p1->next;
+  //                   p1->next = p2;
+  //                   if(tmp != nullptr)
+  //                        p2 = tmp; // p2往后走
+  //                   else
+  //                       p2 = nullptr;
+  //               }
+  //           }
+  //           p1=p1->next;
+  //           if(p1->next == nullptr&&p2!=nullptr){
+  //               p1->next = p2;
+  //               break;
+  //           }else if(p2==nullptr) break;
+  //       }
+  //       pHead1 = tHead;
+  //       return pHead1;
+  // }
+  singleLink* Merge(singleLink* pHead1,singleLink* pHead2){
+        if(pHead1==nullptr&&pHead2!=nullptr) return pHead2;
+        if(pHead1!=nullptr&&pHead2==nullptr) return pHead1;
+        if(pHead1->ctr > pHead2->ctr){
+              swap(pHead1,pHead2);
+          }
+        singleLink* tHead = pHead1;
         singleLink* tmp;
-        while(p1&&p2){
-            if(p1->ctr <= p2->ctr){
-                if(p1->next->ctr>p2->ctr){
-                    tmp = p2->next;
-                    p2->next = p1->next;
-                    p1->next = p2;
-                    if(tmp != nullptr)
-                         p2 = tmp; // p2往后走
-                    else
-                        p2 = nullptr;
+        while(pHead1&&pHead2){
+            if(pHead1->next == nullptr&&pHead2!=nullptr) {
+              pHead1->next = pHead2;
+              break;
+            }
+            if(pHead1->ctr<=pHead2->ctr){
+                if(pHead1->next->ctr>pHead2->ctr){
+                    tmp = pHead2->next;
+                    pHead2->next = pHead1->next;
+                    pHead1->next = pHead2;
+                    pHead2 = tmp;
                 }
             }
-            p1=p1->next;
-            if(p1->next == nullptr&&p2!=nullptr){
-                p1->next = p2;
-                break;
-            }else if(p2==nullptr) break;
+            pHead1 = pHead1->next;
+            if(pHead2 == nullptr) break;
         }
         pHead1 = tHead;
         return pHead1;
@@ -197,10 +224,10 @@ singleLink* midleNode(singleLink *head){
 int main(){
   singleLink *head = new singleLink();
   head = initSingleLink();
-  head = insertRail(head,"12");
+  head = insertRail(head,"135");
   singleLink *rlsit = new singleLink();
   rlsit = initSingleLink();
-  rlsit = insertRail(rlsit,"45689");
+  rlsit = insertRail(rlsit,"135");
   head = Merge(head,rlsit);
   while(head){
     cout << head->ctr << endl;

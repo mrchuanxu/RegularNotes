@@ -29,10 +29,10 @@ bool equal(double num1,double num2){
 
 bool binaryRoot(BinaryTreeNode *p_LRoot,BinaryTreeNode *p_RRoot){
         // 边界问题 两个树是不是空了，就是叶子节点为空就爆出不是
+        if(p_RRoot == nullptr)
+            return true;   // 这是一个比较重要的一点，即遍历到B树的最后一层，返回true，作为结束条件 而且一定要在第一条！！！先判断子结构嘛
         if(p_LRoot == nullptr)
             return false;
-        if(p_RRoot == nullptr)
-            return true;   // 这是一个比较重要的一点，即遍历到B树的最后一层，返回true，作为结束条件
         if(!equal(p_LRoot->m_dbValue,p_RRoot->m_dbValue))
             return false;
         return binaryRoot(p_LRoot->m_pLeft,p_RRoot->m_pLeft)&&binaryRoot(p_LRoot->m_pRight,p_RRoot->m_pRight);

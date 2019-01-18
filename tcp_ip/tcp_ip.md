@@ -27,3 +27,5 @@ ip又叫做网际协议。他是怎么来的呢？我们又是怎样通过ip就�
 先来认识一下这个动态主机配置协议(Dynamic Host Configuration Protocol)->DHCP，靠吼(arp)给你分ip<br>
 DHCP Discover-> DHCP Offer(DHCP Server)->DHCP Request->DHCP ACK(DHCP Server)。<br>
 PXE服务器(客户端)，自己装操作系统。<br>
+### 从物理层到MAC层
+原来这两个层次是不一样的。<br>
