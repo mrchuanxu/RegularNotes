@@ -349,5 +349,5 @@ g(1,2);
 ```
 就会将1给了_1，2给了_2。达到了交换的效果。
 详情可以参考我的另一篇文稿[bind参数绑定](https://github.com/Vitomy/RegularNotes/blob/master/CppNotes/Cpp_genericAlogrithm_associative-container_dynamicMemory.md#%E5%8F%82%E6%95%B0%E7%BB%91%E5%AE%9A)
-好了，可调用对象，大概就是这样，用于算法的计算，缩短代码，让代码的可读性提高。非常有用。下一篇将讲述多态。<br>
+好了，可调用对象，大概就是这样，用于算法的计算，缩短代码，让代码的可读性提高。非常有用。下一篇将讲述省略符形参以及可变参数模版。<br>
 ##### 未完待续...
