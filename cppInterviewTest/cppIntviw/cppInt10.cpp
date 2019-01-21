@@ -87,6 +87,10 @@ void func(){
     cout << p1.use_count() << endl;
     cout << p2.use_count() << endl;
 }
+void funcf(Node* p){
+    cout << "hello world" <<endl;
+}
+void (*pf)(Node *p);
 int main(){
     //unique_ptr<int> up(new int(12));
     // string *pstr = p1.get();
@@ -117,7 +121,8 @@ int main(){
     };
     // shared_ptr<int> foo (new int,deleter);
     // cout << "use_count: " << foo.use_count() << '\n';
-    shared_ptr<Node> bar(new Node(),deleter);
+    pf = funcf;
+    shared_ptr<Node> bar(new Node(),pf);
 
     return 0;
 }
