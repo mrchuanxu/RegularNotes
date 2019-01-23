@@ -9,13 +9,13 @@ int* pint;
 
 using namespace std;
 
-class uv__loop_t{
-  public:
-   int closing_handles;
-   int stop_flag;
-  private:
-   int update_time;
-};
+// class uv__loop_t{
+//   public:
+//    int closing_handles;
+//    int stop_flag;
+//   private:
+//    int update_time;
+// };
 struct PersonInfo
 {
   string name;
@@ -25,7 +25,7 @@ struct PersonInfo
 
 int main()
 {
-  uv__loop_t* loop;
+  // uv__loop_t* loop;
   string line, word;
   vector<PersonInfo> people;
   ifstream ifiles("phone.txt");
