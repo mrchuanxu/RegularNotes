@@ -1,7 +1,11 @@
 #include <iostream>
-
+#include <vector>
 /***
  * 重要是要判断终止条件，这些条件判断打印的循环执行
+ * 对比了自己写的方法和offer上的方法，虽然思路大概都是差不多的，凡事offer确实分开了两种方式来做
+ * 这个程序的细粒度是有的，可是我只是顺着思路一直走，没有考虑把它拿出来，在循环里继续跑。
+ * 其实遇到这些大问题，应该写成小问题来改
+ * 一步一步走，这样以后改的时候也方便，所以推荐offer的解法。
  * ***/
 using namespace std;
 void printMatrix(int **number,int columns,int rows,int start){
@@ -40,3 +44,44 @@ void martixEnter(int **number,int columns,int rows){
         ++start;
     }
 }
+// 来及牛客的解体
+vector<int> printMatrix(vector<vector<int> > matrix) {
+        vector<int> pMResult;
+        if(matrix.size() == 0) return pMResult;
+        int startCol = 0;
+        int startLine = 0;
+        int endCol = matrix[0].size()-1;
+        int endLine = matrix.size()-1;
+        int sumSize = (endCol+1)*(endLine+1);
+        while(pMResult.size()<sumSize){
+            // 👉
+            int i,j,leftCount,upCount;
+            for(i = startCol;i<=endCol;++i){
+                pMResult.push_back(matrix[startLine][i]);
+                if(pMResult.size()==sumSize) return pMResult;
+            }
+            // 👇
+            for(j= startLine+1;j<=endLine;++j){
+                pMResult.push_back(matrix[j][endCol]);
+                if(pMResult.size()==sumSize) return pMResult;
+            }
+            --j;
+            --i;
+            // 👈
+            for(leftCount = i-1;leftCount>=startCol;--leftCount){
+                pMResult.push_back(matrix[j][leftCount]);
+                if(pMResult.size()==sumSize) return pMResult;
+            }
+            ++leftCount;
+            // 👆
+            for(upCount = j-1;upCount>startLine;--upCount){
+                pMResult.push_back(matrix[upCount][leftCount]);
+                if(pMResult.size()==sumSize) return pMResult;
+            }
+            ++startCol;
+            ++startLine;
+            --endLine;
+            --endCol;
+        }
+        return pMResult;
+        }

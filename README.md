@@ -23,6 +23,7 @@
 #### 字符串匹配 凹凸
 #### 剑指offer 📃✅
 * [大数相加，可以思考一下大数相乘计算](./Algorithm/swordtooffer/bigNumAdd/bigNumAdd.cpp)<br>
+* [从外到内打印矩阵，两种解法，对比，佩服剑指](./Algorithm/swordtooffer/matrixPrint/matrixPrint.cpp)
 #### Cpp程序设计知识点集合
 重读cpp Primer，并且将代码实现的过程
 * [拷贝构造函数。类值与类指针行为](./Cpp_Program/copy_control/copyControl.cpp)<br>
@@ -110,3 +111,4 @@ apue巨著，每天读一个小时，理解并深入每个知识点，对进程�
 * [系统文件信息亚数据](./unixAdvance/APUE-SYS_MSG.md)
 * [进程环境](./unixAdvance/APUE-PROCESS.md)
 ### 现代操作系统
+开始学习操作系统的知识，分为进程与线程，内存管理，文件系统，输入输出，死锁。不会看书，只会不断查博客，然后做知识总结。
