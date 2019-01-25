@@ -1,0 +1,9 @@
+a write to stdout;
+before fork
+i am subProcess and i will add globvar 1
+a=20
+pid=1452,glob=7,vr=89
+i=22
+before fork
+pid=1451,glob=6,vr=88
+i=22

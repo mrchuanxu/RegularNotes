@@ -24,7 +24,8 @@ int main(void){
         err_sys("write error!");
     printf("before fork\n"); // before fork
     //printf("pid=%ld,glob=%d,vr=%d\n",(long)geteuid(),globvar,var); 
-    pid = vfork(); // fork之后，将会有两个进程在跑，一个是父进程在跑，一个是子进程在跑 fork之后就是两个程序在跑了！
+    pid = fork(); // fork之后，将会有两个进程在跑，一个是父进程在跑，一个是子进程在跑 fork之后就是两个程序在跑了！
+    fflush(NULL);
     if(pid<0) // 0 调度进程 交换进程
         err_sys("fork error");
     else if(pid==0){
@@ -32,14 +33,12 @@ int main(void){
         //printf("pid=%ld,glob=%d,vr=%d\n",(long)getppid(),globvar,var);
         printf("a=%d\n",subProcess(10));
         globvar++;
-        fclose(stdout);
-        exit(0);
+        var++;
+    }else{
+        sleep(3);
+        //printf("a=%d\n",subProcess(420)); // 可以等待其他请求
+        //printf("i am Process and i sleep\n");
     }
-    // }else{
-    //     //sleep(2);
-    //     printf("a=%d\n",subProcess(420)); // 可以等待其他请求
-    //     printf("i am Process and i sleep\n");
-    // }
     int i = printf("pid=%ld,glob=%d,vr=%d\n",(long)getpid(),globvar,var); 
     printf("i=%d\n",i);
     //printf("pid=%ld,glob=%d,vr=%d\n",(long)getppid(),globvar,var); 
