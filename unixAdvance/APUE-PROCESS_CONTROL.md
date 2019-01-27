@@ -224,6 +224,7 @@ collect id=1113
 4个人互斥的宏，在`<sys/wait.h>`，用来取得进程终止的原因WIF开头。基于这4个宏中哪一个值为真，就可选用其他宏来取得退出状态、信号编号等。<br>
 status: 由函数回填，表示子进程的退出状态。如果填NULL，表示回收资源，并不关心子进程的退出状态。<br>
 再来看看4个状态的宏<br>
+
 宏|描述
 --|--|
 WIFEXITED(status)|返回真表示子进程正常终止，返回假表示子进程异常终止(8种方式)(if exited)
@@ -232,13 +233,16 @@ WTERMSIG(status)|可以获得子进程具体被哪个信号杀死(term signal)
 WIFSTOPPED(status)|子进程是否被信号stop了。stop和杀死是不同的，stop的进程可以被恢复(resumed)(stopped)
 WSTOPSIG(status)|子进程若是被信号stop了，可以查看具体是被哪个信号stop了(stop signal)
 WIFCONTINUED(status)|子进程若被stop了，可以查看它是否被resumed了(恢复)(if continued)
+<br>
 pid分为四种情况<br>
+
 pid参数|解释
---|--|
-`<-1`|为归属于进程组ID为pid参数的绝对值的进程组中的任何一个子进程收尸(懑💩)
+---|:--|
+`<-1` |为归属于进程组ID为pid参数的绝对值的进程组中的任何一个子进程收尸(懑💩)
 `==-1`|为任意一个子进程收尸
-`==0`|为与父进程同一个进程组中的任意一个子进程收尸
-`>0`|为一个PID等于参数pid的子进程收尸
+`==0` |为与父进程同一个进程组中的任意一个子进程收尸
+`>0`  |为一个PID等于参数pid的子进程收尸
+<br>
 看一个waitpid的🌰
 ```c
     pid_t pid;
