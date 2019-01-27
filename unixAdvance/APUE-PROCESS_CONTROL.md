@@ -146,3 +146,186 @@ int main(void){
 ##### 其实🧟‍♀️僵尸进程不会占用大量的资源
 他们在内核中仅仅保留一个结构体，也就是自身的状态信息，其他的资源都会释放。但是会占用一个重要的系统资源就是PID，因为系统中的PID的数量是有限的，所以需要及时收尸☠️<br>
 ### wait 阻塞等待子进程资源的释放，相当于收尸☠️
+当一个进程正常或异常种植时，内核就向其父进程发送 **SIGCHLD信号**。因为 **子进程终止是个异步事件(这可以在父进程运行的任何时候发生)**，所以这种信号也是内核向父进程发的异步通知。父进程可以选择忽略该信号或提供一个该信号发生时即被调用执行的函数(信号处理程序)。对于这种信号的 **系统默认动作是忽略它**。
+```c
+wait,waitpid,waitid - wait for process to change state
+#include <sys/types.h>
+#include <sys/wait.h>
+
+pid_t wait(int *status); // 如果子进程已经终止，处于🧟‍♀️僵尸进程，则立即返回并取得该子进程的状态，否则使其调用者阻塞，直到一个子进程终止
+// 返回终止子进程ID
+pid_t waitpid(pid_t pid, int *status,int options);
+// 返回值，成功返回进程ID，失败返回0或-1
+// 区别
+/***
+ * 在一个子进程终止前，wait使其调用者阻塞，而waitpid有一选项，可使调用者不阻塞
+ * waitpid 并不等待在其调用之后的第一个终止子进程，它有若干个选项，可控制它所等待的进程
+ * 所以options是这个函数设计的精髓，通过WNOHANG宏要求waitpid以非阻塞的形式为子进程收尸
+ * ***/
+```
+调用wait和waitpid
+* 如果其所有子进程都还在运行，则阻塞。
+* 如果一个子进程已终止，正等待父进程获取其终止状态，则取得该子进程的终止状态立即返回。
+* 如果它没有任何子进程，则立即出错返回<br>
+如果进程由于接收到SIGCHLD信号而调用wait，我们期望wait会立即返回。但是如果在随机时间点调用wait，则进程可能会阻塞。<br>
+每次调用wait函数会为一个子进程收尸☠️，而wait函数并没有让我们指定是哪个特定的子进程。如果想要为特定的子进程收尸☠️，需要调用waitpid<br>
+**收尸🧟‍♀️这件事只能是父进程对子进程做，而且只能对自己的子进程做。子进程是不能为父进程收尸☠️，父进程也不能为别人的子进程收尸☠️(自家人收自家尸，不是自家人不收自家尸)**<br>
+我们看到wait有一个status，是一个整型指针。<br>
+对于是否关心终止状态，可以将该参数设定为指向终止状态所存放的单元内或指定为空指针<br>
+看一个简单的🌰
+```c
+#include <sys/wait.h>
+int main(){
+    pid_t pid; // 子进程id获取
+    int i;
+    for(i=0;i<10;i++){
+        fflush(NULL);
+        if((pid=fork())<0){
+            err_sys("fork error");
+            exit(0);
+        }else if(0==pid){
+            printf("get child id=%d\n",getpid());
+            sleep(2);
+            exit(0);
+        }
+    }
+    for(i=0;i<10;i++){
+       pid =  wait(NULL); // 父进程为所有的子进程收尸 表示回收资源，这样每个父进程都能回收资源后退出，使得子进程再也不会成为孤儿进程
+       printf("collect id=%d\n",pid);
+    }
+    return 0;
+}
+```
+如果我让所有的子进程睡眠2秒，但是每个进程的回收顺序是不确定的<br>
+```
+transCheungdeMacBook-Pro:processcollect transcheung$ ./processcol.t
+get child id=1104
+get child id=1105
+get child id=1106
+get child id=1107
+get child id=1108
+get child id=1109
+get child id=1110
+get child id=1111
+get child id=1112
+get child id=1113
+collect id=1108
+collect id=1107
+collect id=1106
+collect id=1105
+collect id=1104
+collect id=1109
+collect id=1110
+collect id=1112
+collect id=1111
+collect id=1113
+```
+也就是说，进程的运行速度是不确定的。<br>
+4个人互斥的宏，在`<sys/wait.h>`，用来取得进程终止的原因WIF开头。基于这4个宏中哪一个值为真，就可选用其他宏来取得退出状态、信号编号等。<br>
+status: 由函数回填，表示子进程的退出状态。如果填NULL，表示回收资源，并不关心子进程的退出状态。<br>
+再来看看4个状态的宏<br>
+宏|描述
+--|--|
+WIFEXITED(status)|返回真表示子进程正常终止，返回假表示子进程异常终止(8种方式)(if exited)
+WEXITSTATUS(status)|返回子进程的退出码。只有上一个宏返回正常终止时才能使用，异常终止是不会有返回值的。(exitstatus)
+WTERMSIG(status)|可以获得子进程具体被哪个信号杀死(term signal)
+WIFSTOPPED(status)|子进程是否被信号stop了。stop和杀死是不同的，stop的进程可以被恢复(resumed)(stopped)
+WSTOPSIG(status)|子进程若是被信号stop了，可以查看具体是被哪个信号stop了(stop signal)
+WIFCONTINUED(status)|子进程若被stop了，可以查看它是否被resumed了(恢复)(if continued)
+pid分为四种情况<br>
+pid参数|解释
+--|--|
+`<-1`|为归属于进程组ID为pid参数的绝对值的进程组中的任何一个子进程收尸(懑💩)
+`==-1`|为任意一个子进程收尸
+`==0`|为与父进程同一个进程组中的任意一个子进程收尸
+`>0`|为一个PID等于参数pid的子进程收尸
+看一个waitpid的🌰
+```c
+    pid_t pid;
+
+    if((pid=fork())<0){
+        err_sys("fork error");
+    }else if(pid == 0){
+        printf("first child,child pid = %ld\n",(long)getpid());
+        sleep(2);
+        if((pid=fork())<0) // 子进程又fork一次
+            err_sys("fork error");
+        else if(pid>0){ // 可以看出pid是两个值，一个是父进程ID
+            printf(">0 pid = %ld\n",(long)getpid());
+            // exit(0);
+        }
+        else if(pid == 0){ // 一个是子进程环境的执行
+            printf("=0 pid = %ld\n",(long)getpid()); // 子进程的ID
+            exit(0);
+        }
+        // 父进程退出了，init回收孤儿子进程
+        printf("second child,parent pid = %ld\n",(long)getpid());
+        sleep(4);
+        exit(0);
+    }
+    printf("parent pid = %ld\n",(long)getpid());
+    printf("pid = %d\n",pid);
+    if(waitpid(pid,NULL,0)!=pid) // 非阻塞的方式回收资源子进程资源
+        err_sys("waitpid error");
+    exit(0);
+```
+```
+parent pid = 2487
+pid = 2488
+first child,child pid = 2488
+>0 pid = 2488
+second child,parent pid = 2488
+=0 pid = 2492
+```
+waitpid就等着2488结束然后回收资源，这样是一种非阻塞的方式回收，就是父进程退出后，waitpid就等着回收资源，这样就避免了长时间占用资源，成为僵尸<br>
+#### 讲了那么多收尸，为什么要收尸？
+为什么不让子进程结束后自动释放所有资源？如果不收尸会发生什么？<br>
+假设父进程需要创建一个子进程并且要让它做3秒钟的事情，很不巧，紫禁城刚启动就出现了一个异常挂了，并且直接释放了自己的资源(没有收尸的情况)，而此时系统的PID资源紧脏，很已死掉的子进程PID就分配给了其他进程，而父进程此时并不知道手里的子进程PID已经不属于它的了。如果，父进程不想执行这个子进程了，kill掉，那么，这个PID又在进行别的操作...OMG😱<br>
+有了收尸技术，wait和waitpid，子进程状态改变时会给父进程发送一个SIGCHLD信号，wait函数其实就是阻塞等待被这个信号打断，来收尸。<br>
+系统通过收尸机制，来保证父进程未执行收尸动作之前，手里拿到子进程PID一定有效，自家人收自家尸。<br>
+### 竞争条件
+当多个进程都企图对共享数据进行某种处理，而 **最后的结果又取决于进程运行的顺序时**，我们认为发生了 **竞争条件**，不知道是哪个进程先执行，就产生了竞争条件<br>
+如果在fork之后的某种逻辑显式或隐式地依赖于在fork之后的父进程先运行还是子进程线运行，那么fork函数就会是竞争条件活跃的滋生地。进程开始运行后所发生的事情也依赖于系统负载以及内核的调度算法。<br>
+例如上面这个🌰，我们其实也看到一个潜在的竞争条件。
+* 如果第二个子进程在第一个子进程之前运行，则其父进程将会是第一个子进程。
+* 如果第一个子进程先执行，并有足够的时间到底并执行exit，则在第二个子进程的父进程是init
+* sleep不能保证顺序执行。<br>
+* 如果一个进程希望等待一个子进程终止，则它必须调用wait函数中的一个。
+* 如果一个进程要等待其父进程终止，也可以这样玩<br>
+```c
+while(getppid() != 1) // 等待init来回收，浪费cpu时间
+    sleep(1);
+```
+#### 避免竞争条件和轮询 我们需要通信
+这种轮询是需要避免的，为了避免竞争条件还有轮询，多个进程之间就需要通信，需要某种形式的 **信号发送和接收方法**。互相沟通，让进程环境更和谐。<br>
+```c
+/***
+ * 输出字符串，一个由子进程输出，另一个由父进程输出
+ * 输出依赖于内核，使两个进程运行的顺醋以及每个进程运行的时间长度
+ * ***/
+
+static void charatatime(char *);// static 让其作为程序的唯一函数
+int main(void){
+    pid_t pid;
+
+    if((pid=fork())<0){
+        err_sys("fork error");
+    }else if(pid == 0){ // 从这里开始产生竞争条件
+        charatatime("out put by child\n");
+    }else{
+        charatatime("out put by paren\n");
+    }
+    exit(0);
+}
+
+static void charatatime(char *str){
+    char *ptr;
+    int c;
+    setbuf(stdout,NULL);
+    for(ptr = str;(c=*ptr++)!=0;){
+        putc(c,stdout);
+    }
+}
+```
+### exec函数，每次fork后，子进程调用exec来调用执行另一个程序
+
