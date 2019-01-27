@@ -273,7 +273,8 @@ pid参数|解释
         err_sys("waitpid error");
     exit(0);
 ```
-```
+运行后的输出
+```c
 parent pid = 2487
 pid = 2488
 first child,child pid = 2488
