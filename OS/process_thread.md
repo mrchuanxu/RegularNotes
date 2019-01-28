@@ -54,7 +54,8 @@ Text Segment|表示程序的代码段
 Data Segment|表示已初始化且初值非0的全局变量和静态局部变量
 BBS|表示未初始化或初始值为0的全局变量和静态局部变量
 <br>
-![虚拟存储器](./img/virtualStorage.jpg)<br>
+
+![虚拟存储器](./img/virtualStorage.jpg "虚拟存储器")<br>
 task_struct中的一个字段指向了mm_struct，它描述了虚拟存储器当前的状态，其中pdg指向了第一级页表的基地址，而mmap指向一个vm_area_structs区域结构的链表，每个vm_area_structs都描述了当前虚拟地址空间的一个区域。<br>
 ##### 虚拟存储器是如何使用主存作为缓存的
 物理存储器和虚拟存储器都是用页来作为磁盘和内存的存储单元。<br>
