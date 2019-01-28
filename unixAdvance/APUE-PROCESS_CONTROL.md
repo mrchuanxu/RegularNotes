@@ -332,5 +332,74 @@ static void charatatime(char *str){
     }
 }
 ```
-### exec函数，每次fork后，子进程调用exec来调用执行另一个程序
+### exec函数，每次fork后，子进程调用一种exec来调用执行另一个程序
+当进程调用一种exec函数时，该进程执行的程序完全替换为新程序，而新程序则从其main函数开始执行。因为调用exec并不创建新进程，所以前后的进程ID并未改变。exec只是用磁盘上的一个新程序 **替换了当前进程的正文段、数据段、堆段和栈段。**<br>
+```c
+#include <unistd.h>
+int execl(const char *pathname,const char *arg0,.../*(char *)0*/);
+int execv(const char *pathname,char *const argv[]);
+int execle(const char *pathname,const char *arg0,.../*(char* )0,char *const envp[] */);
+int execve(const char *pathname,char *const argv[],char *const envp[]); // 只有这个是内核系统调用，其他是库函数
+// 上面四个函数取路径名为参数
+int execlp(const char *filename,const char *arg0,.../*(char*)0*/);
+// ...省略号形参，最后一个参数要是NULL，表示表示变长参数列表的结束
+int execvp(const char *filename, char *const argv[]);
+// 上面两个函数取文件名为参数，若filename中包含/，则就将其视为路径名
+int fexecve(int fd,char *const argv[],char *const envp[]);// 去文件描述符作为参数
+// 7个函数返回，出错返回-1，成功，不返回
+```
+先来看看fork的一个🌰执行时，父子进程依赖关系通过ps -axf查看
+```c
+1 >$ ps axf
+2  3565 pts/1    Ss     0:00  \_ bash
+3  3713 pts/1    S+     0:00  |   \_ ./1fork
+4  3714 pts/1    S+     0:00  |       \_ ./1fork
+5 >$
+```
+fork创建子进程是通过复制父进程的形式来实现的，但是我们的父进程又是bash的子进程，那为什么bash没有创建出来一个与自己一模一样的子进程呢？mm_struct，提一下，这是linux虚拟构建线程的存储，让每个进程就像操作了自己的主存，拥有自己的地盘。<br>
+为什么呢？因为exec函数族的功劳。<br>
+##### 换药不换汤
+它可以 **使调用的它进程“外壳”不变，“内容物”改变为新的东西。**“外壳”就是父子关系，PID等东西，“内容物”其实是指一个新的可执行程序。也就是exec函数会将调用它的进程完全(整个4GB虚拟内存空间，代码段，数据段，堆栈等等)变成另一个可执行程序，但父子关系、PID等东西不会改变。<br>
+在执行了exec函数族的函数后， **整个进程的地址空间会立即被替换掉**，所以exec下面的代码全部都不会再执行了，  **替代的是新程序的代码段。**<br>
+##### 缓冲区 让数据先到达该去的地方
+缓冲区也会被新的程序所替换，所以在 **执行exec之前要使用fflush(NULL)刷新所有的缓冲区**，这样父进程才会让它缓冲区中的数据到达他们该去的地方，而不是在数据到达目的地之前缓冲区就被覆盖掉。<br>
+```c
+/***
+ * processwaitpid.t是一个执行文件
+ * ***/
+#include "../include/apue.h"
+/***
+ * 创建子进程processwaitpid，无参数
+ * */
+int main(){
+    pid_t pid;
+
+    puts("Begin!");
+
+    fflush(NULL);
+
+    pid = fork();
+
+    if(pid<0){
+        err_sys("fork error");
+        exit(1);
+    }
+    if(pid == 0){
+        execl("./processwaitpid.t",NULL);
+        // 无参数传入
+        //execl("/bin/date","date","+%s",NULL); 后面的参数基本就是传参给data
+        err_sys("execl()");
+        exit(1);
+    }
+    wait(NULL);
+    puts("END");
+    exit(0);
+}
+```
+fork,exec,wait函数可以让我们创建任何进程来执行任何命令，就这么看，其实整个*nix世界都是由fork，exec，wait这三个函数搭建起来的。也可以用三个函数来编写一些shell程序。<br>
+### shell的内部命令(cd、exit、|、>等)和外部命令(which)
+像cd、exit、|、>牵涉到环境变量改变等动作这样的命令就做内部命令，而使用which命令能查到在磁盘上存在的命令就是外部命令。<br>
+可以用fork，exec，wait函数来编写shell，基本可以执行所有的外部命令。但是shell也支持内部命令，内部命令才是shell的 **难点**。<br>
+### 更改用户ID和更改组ID 更改是需要特权和访问控制的
+在*nix系统中，特权和访问控制是基于用户ID和用户组ID的，所以当我们需要使用特权或访问无权访问的文件时，需要切换用户ID或用户组ID<br>
 
