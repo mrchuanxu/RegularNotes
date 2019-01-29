@@ -402,4 +402,259 @@ fork,exec,wait函数可以让我们创建任何进程来执行任何命令，就
 可以用fork，exec，wait函数来编写shell，基本可以执行所有的外部命令。但是shell也支持内部命令，内部命令才是shell的 **难点**。<br>
 ### 更改用户ID和更改组ID 更改是需要特权和访问控制的
 在*nix系统中，特权和访问控制是基于用户ID和用户组ID的，所以当我们需要使用特权或访问无权访问的文件时，需要切换用户ID或用户组ID<br>
+同样，当程序需要降低其特权或阻止对某些资源的访问时，也需要更换用户ID或组ID，新ID不具有相应特权或访问这些资源的能力。<br>
+##### 最小特权模型(leasr privilege)
+依照这个模型，程序应当只具有为完成给定任务所需的最小特权。(降低风险)<br>
+#### setuid设置实际用户ID和有效用户ID，setgid设置实际组ID和有效组ID
+```c
+#include <unistd.h>
+int setuid(uid_t uid);
+int setgid(gid_t gid);
+// 成功返回0，出错返回-1
+```
+谁能更改ID？<br>
+* 若进程具有超级用户特权，则setuid函数将实际用户ID、有效用户ID以及保存的设置用户ID设置为uid
+* 若进程没有超级用户特权，但是uid等于实际用户ID或保存的设置用户ID，则setuid只将有效用户ID设置为uid，不更改实际用户ID和保存的设置用户ID
+* 如果上面两个条件都不满足，则errno设置为EPERM，并返回-1<br>
 
+ID|exec设置用户ID位关闭|exec设置用户ID位打开|setuid超级用户|setuid非特权用户
+|--|:--|:--|:--|:--
+实际用户ID|不变|不变|设为uid|不变
+有效用户ID|不变|设置为程序文件的用户ID|设为uid|设为uid
+保存的设置用户ID|从有效用户ID复制|从有效用户ID复制|设为uid|不变
+<br>
+
+#### setreuid和setregid
+```c
+#include <unistd.h>
+int setreuid(uid_t ruid,uid_t euid);
+int setregid(gid_t rgid,gid_t egid);
+// 成功返回0，出错返回-1
+```
+
+一个非特权用户总能交换实际用户ID和有效用户ID。
+#### seteuid和setegid
+```c
+#include <unistd.h>
+int seteuid(uid_t uid);
+int setegid(gid_t gid);
+// 成功返回0，出错返回-1
+```
+更改3个不同用户ID的各个函数<br>
+![设置不同用户ID的各函数](./img/setuid.png "设置不同用户ID的各函数")<br>
+总结下来<br>
+
+uid|作用
+|--|:--
+r(real)|用户保护用户权限
+e(effective)|鉴定用户权限时使用
+s|与real相同，所有有些系统不支持
+
+gid|作用
+|--|:--
+r(real)|用户保护用户组权限
+e(effective)|鉴定用户组权限时使用
+s|与real相同，所有有些系统不支持
+
+比如普通用户没有查看/etc/shadow文件的权限。为什么有权限修改自己的密码？
+```c
+$ which passwd
+/usr/bin/passwd
+$ ls -l /usr/bin/passwd
+-rwxr-xr-x  1 root  wheel  68656 11 30 15:38 /usr/bin/passwd
+```
+因为passwd命令具有U+S权限，用户在使用这个程序的时候身份会切换为这个程序文件所有者的身份。G+S与U+S类似，只不过执行的瞬间身份会切换为与程序归属用户组相同的组权限。<br>
+### 解释器文件 脚本 #!
+解释器是一个二进制的可执行文件。就是为了用一个可执行的二进制文件解释执行解释器文件中的命令。
+`#!`用于装载解释器!🌰 `#!/bin/shell` 装载了`/bin/shell`作为解释器  <br>
+举个🌰，我要执行js文件，那么我建一个js文件
+```js
+#! /usr/local/bin/node // 这里指明解释器
+console.log("i am js");
+```
+然后执行文件，用exec函数即可
+```c
+int main(){
+    pid_t pid;
+
+    puts("Begin!");
+
+    fflush(NULL);
+    execl("dojs.js",NULL);
+    err_sys("execl()");
+    exit(1);
+}
+```
+exec会根据执行文件的解释器，解释文件，而后执行成二进制文件，最后一起执行，当然还可以传参。<br>
+
+### system
+```c
+system - execute a shell command
+#include <stdlib.h>
+
+int system(const char *command);
+// 执行一条系统命令，通过调用/bin/sh -c command实现
+```
+system结合上面的解释器，可以猜到
+```c
+int main(){
+    pid_t pid;
+
+    puts("Begin!");
+
+    fflush(NULL);
+
+    pid = fork();
+
+    if(pid<0){
+        err_sys("fork error");
+        exit(1);
+    }
+    if(pid == 0){
+        execl("/bin/sh","sh","-c","date +%s",NULL);
+        err_sys("execl()");
+        exit(1);
+    }
+    wait(NULL);
+    puts("END");
+    exit(0);
+}
+```
+这样实现一个system系统命令<br>
+### 用户标识
+```c
+getlogin,getlogin_r,cuserid-get username
+#include <unistd.h>
+char *getlogin(void);
+int getlogin_r(char *buf.size_t bufsize);
+```
+能够不受任何因素影响的获取当前终端的用户名，例如切换了用户，getlogin函数获得的还是原始的用户名<br>
+### 进程调度(nice值调整) 这个在操作系统进程通信会更详细的讲 
+调度策略和调度优先级是由内核确定的。进程可以通过调整nice值选择以更低优先级运行(通过调整nice值降低它对CPU的占有，因此该进程是“友好的”，nice值越小优先级越高)。只有特权进程允许提高调度权限。<br>
+**nice值范围在0~(2*NZERO)-1之间**，nice值越友好，调度优先级越低。(强势的人总是优先级越高，但是长得也小)。NZERO是系统默认的nice值。<br>
+```c
+#include <unistd.h>
+int nice(int incr); // 通过nice函数获取或更改它的nice值。进程只能影响自己的nice值
+// 成功返回新的nice值NXERO，出错，返回-1
+```
+incr参数被增加到调用进程的nice值上。如果incr太大或太小，系统直接把它降到最大合法值或提高到最笑合法值，不给提示。<br>
+getpriority函数可以像nice函数那样用于获取进程的nice值，但是getpriority还可以获取一组相关进程的nice值<br>
+```c
+#include <sys/resource.h>
+int getpriority(int which, id_t who);
+// 返回值，若成功，返回-NZERO～NZERO-1之间的nice值，出错，返回-1
+```
+
+which参数|表示
+|--|:--|
+PRIO_PROCESS|表示进程
+PRIO_PGRP|表示进程组
+PRIO_USER|表示用户ID
+
+which参数控制who参数是如何解释的，who参数选择感兴趣的一个或多个进程。
+
+who参数|表示
+|--|:--|
+0|表示调用进程、进程组或者用户(取决于which参数的值)
+
+当which设为PRIO_USER并且who设为0，使用调用进程的实际用户ID。如果which参数作用于多个进程，则返回所有作用进程中优先级最高的(最小的nice值)。<br>
+setpriority函数可用于为进程、进程组和属于特定用户ID的所有进程设置优先级
+```c
+#include <sys/resource.h>
+int setpriority(int which,id_t who,int value);
+// c成功返回0，出错 -1
+```
+看个具体的🌰
+```c
+#include "../include/apue.h"
+#include <errno.h>
+#include <sys/time.h>
+
+#if defined(MACOS)
+#include <sys/syslimits.h>
+#endif
+
+unsigned long long count;
+struct timeval end; // timeval是一个结构
+
+void checktime(char *str){
+    struct timeval tv;
+    gettimeofday(&tv,NULL);
+    if(tv.tv_sec >= end.tv_sec && tv.tv_usec >= end.tv_usec){
+        printf("%s count = %lld\n",str,count);
+        exit(0);
+    }
+}
+
+int main(int argc,char *argv[]){
+    pid_t pid;
+    char *s;
+    int nzero,ret;
+    int adj = 0;
+
+    setbuf(stdout,NULL);
+    #if defined(NZERO)
+        nzero = NZERO;
+    #elif defined(_SC_NZERO)
+        nzero = sysconf(_SC_NZERO);
+    #else
+    #endif
+
+        printf("NZERO = %d\n",nzero);
+        if(argc == 2)
+            adj = strtol(argv[1],NULL,10);
+        gettimeofday(&end,NULL);
+        end.tv_sec+=10; // 走十秒先
+        if((pid = fork())<0){
+            err_sys("fork failed");
+        }else if(pid == 0){
+            s = "child";
+            printf("current nice value in child is %d.adjusting by %d\n",nice(0)+nzero,adj);
+            errno = 0;
+            if((ret = nice(adj))==-1&&errno != 0)
+                err_sys("child set scheduling priority");
+            printf("now child nice value is %d\n",ret+nzero);
+        }else {
+            s = "parent";
+            printf("current nice value in parent is %d\n",nice(0)+nzero);
+        }
+        for(;;){
+            if(++count == 0)
+                err_quit("%s counter wrap",s);
+                checktime(s);
+        }
+```
+执行该程序两次，一次使用默认的nice值，另一次用最高有效nice值
+```c
+$ ./niceprocess.t
+NZERO = 0
+current nice value in parent is 0
+current nice value in child is 0.adjusting by 0
+now child nice value is 0
+child count = 461086964
+parent count = 461169757
+$ ./niceprocess.t 20
+NZERO = 0
+current nice value in parent is 0
+current nice value in child is 0.adjusting by 20
+now child nice value is 19
+parent count = 449168971
+child count = 446543618
+```
+看到根据优先级不同，cpu占用时间不同。<br>
+### 进程时间
+```c
+#include <sys/times.h>
+clock_t times(struct tms *buf);
+// 成功，但会流逝的墙上时间(以时钟的滴答数为单位)。出错，返回-1
+```
+buf的tms结构
+```c
+struct tms{
+    clock_t tms_utime; // user cpu time
+    clock_t tms_stime; // system cpu time
+    clock_t tms_cutime; // user cpu time terminated children
+    clock_t tms_cstime; // system cou time,terminated children
+}
+```
+想知道怎么用？自行探索吧。

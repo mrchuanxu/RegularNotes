@@ -17,7 +17,7 @@ int main(){
         exit(1);
     }
     if(pid == 0){
-        execl("./processwaitpid.t",NULL);
+        execl("/bin/sh","sh","-c","date +%s",NULL);
         err_sys("execl()");
         exit(1);
     }
