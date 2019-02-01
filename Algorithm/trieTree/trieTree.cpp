@@ -9,10 +9,15 @@
  * 因而查找的时间复杂度O(k),构建的空间复杂度为O(n)
  * 
  * 存储结构
+ * 可以尝试缩点优化，将子节点压缩在一起
+ * 
+ * 对于动态集合数据的查找，更倾向于散列表或红黑树
+ * 
  * ***/
 
 #include <iostream>
 #include <vector>
+#include <string>
 #include <memory.h>
 using namespace std;
 
@@ -36,7 +41,7 @@ class TrieTree{
             return triNew;
         }
         void insertTrie(const char *str);
-        bool searchTrie(const char *str);
+        bool searchTrie(char *str);
         ~TrieTree(){
             for(auto itptr:vectri_ptr){
                 delete itptr;
@@ -75,7 +80,7 @@ void TrieTree::insertTrie(const char *str){
  * 用于匹配字符
  * 查到最后的节点
  * ***/
-bool TrieTree::searchTrie(const char *str){
+bool TrieTree::searchTrie(char *str){
     bool found = false;
     if(str == nullptr) return found;
     int len = strlen(str);
@@ -101,11 +106,14 @@ int main(){
     for(auto iter:vec){
        triTree->insertTrie(iter);
     }
-    if(triTree->searchTrie("hello")){
-        cout << "found"<<endl;
-    }else{
-        cout << "no" << endl;
-    }
+    // while(cin >> str){
+    //     cout << *str << endl;
+        if(triTree->searchTrie("hello")){
+            cout << "found"<<endl;
+        }else{
+            cout << "no" << endl;
+        }
+    //}
     delete triTree;
     return 0;
 }
