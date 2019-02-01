@@ -18,8 +18,9 @@
 * [二叉树，构树，二叉查找树？什么样的二叉树适合用数组存储](./Algorithm/binaryTree/binaryTree.cpp)<br>
 * [堆，为什么说堆排序没有快速排序快？持续堆化的完全二叉树](./Algorithm/heapSort/heapSort.cpp)<br>
 * [堆的应用，如何查找topk的搜索关键词](./Algorithm/swordtooffer/minKnums/minKnums.cpp)<br>
-* [图，如何存储微博，微信等社交网络好友关系？散列表与链表的存储结构，邻接表](./Algorithm/graphStorage/graphStorage.cpp)<br>
-* [图的广度优先遍历与深度优先遍历，广度优先，存储三个关系，深度优先，压栈关系](./Algorithm/bfsGraph/bfsGraph.cpp)<br>
+* [图，如何存储微博，微信等社交网络好友关系？散列表与链表的存储结构，邻接表](./Algorithm/graphStorage/graphStorage.cpp)
+* [图的广度优先遍历与深度优先遍历，广度优先，存储三个关系，深度优先，压栈关系](./Algorithm/bfsGraph/bfsGraph.cpp)
+* [Trie🌲，如何实现搜索引擎的搜索关键词提示功能呢？和散列表以及红黑树比较又有什么优缺点？](./Algorithm/trieTree/trieTree.cpp)
 #### 字符串匹配 凹凸
 * [BM算法，如何实现文本编辑器中的查找功能](./Algorithm/bmstring/bmstring.cpp)
 * [借助BM算法轻松理解KMP算法](./Algorithm/kmpstring/kmp.cpp)

@@ -80,7 +80,9 @@ int main(){
     //     //cout << sum << endl;
     // }
     // cout << sum+1 << endl;
-    int i = 8&1;
-    cout << "f" << i << endl;
+    // int i = 8&1;
+    // cout << "f" << i << endl;
+    const char *str = "testssssssss";
+    cout << strlen(str)<<endl;
     return 0;
 }
