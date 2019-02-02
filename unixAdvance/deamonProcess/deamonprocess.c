@@ -19,10 +19,10 @@ void daemonize(const char *cmd){
     if((pid=fork())<0)
         err_quit("%s:can't fork",cmd);
     else if(pid!=0)
-        exit(0); // 父进程退出
-    // 脱离控制终端
-    // 成为组长进程
-    // 成为会话组首个进程
+        exit(0); // 父进程退出 留下孤儿进程
+    // 脱离控制终端 PID
+    // 成为组长进程 PGID
+    // 成为会话组首个进程 SID
     setsid();
     // 忽略sighup信号
     // 当终端退出，会发送该信号给会话组长，默认处理方式退出
@@ -44,7 +44,7 @@ void daemonize(const char *cmd){
         printf("%d\n",pid);
         exit(0);
     }
-    // 改变文件目录
+    // 改变文件目录 改变工作目录
     if(chdir("/")<0){
         err_quit("chdir");
         exit(-1);
