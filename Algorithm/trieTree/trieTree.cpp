@@ -19,6 +19,7 @@
 #include <vector>
 #include <string>
 #include <memory.h>
+#include <typeinfo>
 using namespace std;
 
 struct trieNode{
@@ -106,14 +107,16 @@ int main(){
     for(auto iter:vec){
        triTree->insertTrie(iter);
     }
-    // while(cin >> str){
-    //     cout << *str << endl;
-        if(triTree->searchTrie("hello")){
+    char ctr[30];
+    // char *ctr = str;
+    
+    while(cin >> ctr){ // 对于输入的问题要深究一下
+        if(triTree->searchTrie(ctr)){
             cout << "found"<<endl;
         }else{
             cout << "no" << endl;
         }
-    //}
+    }
     delete triTree;
     return 0;
 }
