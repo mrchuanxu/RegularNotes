@@ -82,7 +82,13 @@ int main(){
     // cout << sum+1 << endl;
     // int i = 8&1;
     // cout << "f" << i << endl;
-    const char *str = "testssssssss";
-    cout << strlen(str)<<endl;
+    // const char *str = "testssssssss";
+    // cout << strlen(str)<<endl;
+    vector<int> vec{1,2,3};
+    vector<int> vec3{3,4,5};
+    vec = vec3;
+    for(auto iter:vec){
+        cout << iter << endl;
+    }
     return 0;
 }
