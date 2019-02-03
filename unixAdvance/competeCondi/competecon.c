@@ -11,6 +11,7 @@ int main(void){
        // WAIT_PARENT();
         charatatimr("output from child\n");
     }else{
+        sleep(10);
         charatatimr("out put from parent\n");
         //TELL_CHILD(pid);
     }

@@ -53,6 +53,7 @@
 * [指针和引用区别，引用可以用常指针实现吗？](./cppInterviewTest/cppInterview3.md)
 * [什么是智能指针？为什么要用智能指针？如何打破循环引用的问题？实现一个智能指针呗！对于资源管理有什么作用？](./cppInterviewTest/cppInterview4.md)
 * [什么是可调用对象？了解lambda表达式吗？function又是怎么回事？](./cppInterviewTest/cppInterview5.md)
+* [什么是多态，多态有什么用途。(虚函数)](./cppInterviewTest/cppInterview7.md)
 #### Cpp Primer与TCPL部分
 对Cpp Primer的学习笔记以及部分实现。以及研读Effective C++55 items
 * [关于深拷贝与浅拷贝，知道多少？](./CppNotes/deepCopy_shallowCopy/deep_shallow.cpp)
@@ -115,6 +116,7 @@ apue巨著，每天读一个小时，理解并深入每个知识点，对进程�
 * [进程环境](./unixAdvance/APUE-PROCESS.md)
 * [进程控制fork、wait、exec](./unixAdvance/APUE-PROCESS_CONTROL.md)
 * [进程关系(会话，进程组，进程)与守护进程(setsid)](./unixAdvance/APUE-PROCESS_RELATIVE_DEFEND.md)
+* [信号，进程与线程异步的思想](./unixAdvance/APUE-SIGNAL.md)
 ### 现代操作系统
 开始学习操作系统的知识，分为进程与线程，内存管理，文件系统，输入输出，死锁。不会看书，只会不断查博客，然后做知识总结。
 * [进程与线程，很抽象](./OS/process_thread.md)
