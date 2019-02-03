@@ -24,9 +24,13 @@
 #### 字符串匹配 凹凸
 * [BM算法，如何实现文本编辑器中的查找功能](./Algorithm/bmstring/bmstring.cpp)
 * [借助BM算法轻松理解KMP算法](./Algorithm/kmpstring/kmp.cpp)
+#### 算法思想
+* [贪心，讲究贪心策略，我一开始只要最好的，实例，剪绳子问题](./Algorithm/swordtooffer/dynamic_greedy/dynamic_greedy.cpp)
 #### 剑指offer 📃✅
+##### 基础知识
 * [大数相加，可以思考一下大数相乘计算](./Algorithm/swordtooffer/bigNumAdd/bigNumAdd.cpp)<br>
 * [从外到内打印矩阵，两种解法，对比，佩服剑指](./Algorithm/swordtooffer/matrixPrint/matrixPrint.cpp)
+
 #### Cpp程序设计知识点集合
 重读cpp Primer，并且将代码实现的过程
 * [拷贝构造函数。类值与类指针行为](./Cpp_Program/copy_control/copyControl.cpp)<br>
