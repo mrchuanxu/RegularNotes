@@ -158,3 +158,121 @@ unsigned int noinagain(int para){
 
 ### 可靠信号属于和语义
 ![标准信号的处理过程](./img/signal_stand_deal.png "标准信号的处理过程")<br>
+mask和padding位图是一一对应的，它们用于反映当前进程信号的状态。每一位代表了一个标准信号，例如SIGINT打断。<br>
+mask位图用于记录📝哪些信号可以响应。1表示该信号📶可以响应，0表示该信号不可响应(会被忽略)。<br>
+padding位图用于记录收到了哪些信号。1表示收到了该信号，0表示没有收到该信号。<br>
+程序在执行的过程中会被打断无数次，也就是说程序被打断吼要停止手头的工作，进入一个队列排队等待再次被调度才能继续工作。<br>
+当 **进程获得调度机会后** ，从内核态返回到用户态之前要做很多事情，其中一件事就是 **将mask位图和padding位图进行&运算**，当 **计算结果不为0时** 就需要调用相应的信号处理函数或执行信号的默认动作。<br>
+这就是Linux的信号处理机制，从这个机制中，可以总结出几个信号的特点。
+* 如果想要屏蔽某个信号，只需要将对应的mask位置为0即可。这样当程序从内核态返回用户态进行mask&padding时，该信号位的计算结果一定为0.
+* 信号📶从收到到响应是存在延迟的，一般最长的延迟时间10ms。因为 **只有程序被打断并且重新被调度的时候才有机会发现收到了信号** ，所以当我们向一个程序按下Ctrl+C时，程序并没有立即挂掉，只不过这个时间非常短暂我们一般情况下感觉不到而已，我们自己会以为程序是立即挂掉。写一个死循环就能验证
+* 当一个信号没有被处理时，无论再次接受到多少个相同的信号都只能保留一个，因为padding是一个位图，位图的特点就是只能保留最后一次的状态。这一点说得就是标准信号会丢失的特点，如果想要不丢失信号就只能使用 **实时信号**。
+* 信号处理函数不允许使用longjmp进行跨过函数跳转。因为处理信号之前系统会把mask对应的位图设置为0来避免信号处理函数重入，当信号📶处理完成之后系统会把对应的mask位设置为1恢复进程对该信号的响应能力。 **(所以其实内核在处理函数的时候，信号一旦收到了就会就mask设置为0，避免其他信号的干扰，等处理完这个信号再置为1)。** 如果进行了长跳转系统就不会恢复mask位图了，也就再也无法收到该信号了。 实际上，信号是县城级别的，即使mask位图在处理前被置为0，依然有可能出现重入的现象，因为其他兄弟线程其实也有可能mask值没改变。<br>
+* 信号处理函数的执行时间越短越好，因为信号处理函数是在用户态执行的，在它的执行过程中也会不停的被内核打断，所以如果信号处理函数执行的时间过长会使情况变得复杂。<br>
+* 信号的响应是嵌套执行的。就是说假设进行先收到了SIGINT信号，当它的信号处理函数还没有执行完毕时又收到了另一个信号SIGQUIT，那么当进程从内核态返回到用户态时会优先执行SIGQUIT的信号处理函数，SIGQUIT处理好->SIGINT继续处理(回到上次被打断的地方继续执行)，这就给人一种错觉，像是在SIGINT的信号处理函数中调用了SIGQUIT的信号处理函数一样。但其实是执行了SIGQUIT，再从SIGINT打断的地方继续执行。<br>
+* 如果同时到来多个优先级差不多的信号，无法保证优先响应哪个信号，它们的响应没有严格意义上的顺序(没有队列的概念)。除非是收到了优先级较高的信号，系统会保证高优先级的先被处理。<br>
+### kill 🔪杀死一个进程?不不不，作为一个杀手，我还有很多信号📶
+```c
+kill - send a signal to a process or a group of process
+#include <signal.h>
+int kill(pid_t pid,int sig);
+// 成功 0， 失败-1 并设置errno
+```
+kill函数的作用就是将指定的信号sig发送给指定的进程pid<br>
+kill其实负责给进程发送各种信号。<br>
+
+值|说明
+|--|:--|
+`>0`|接收信号的进程ID
+`==0`|发送信号给当前进程所在进程组的所有进程
+`==-1`|发送信号给当前进程有权向它们发送信号的所有进程，1号init进程除外。相当于📢广播信号，发送这种信号只有1号init会做，比如关机📴，1号就会广播信号📢大家，结束了。
+`<-1`|将pid的绝对值作为组ID，给这个组中所有的进程发送信号
+
+<br>
+sig:要发送的信号，可以使用`kill -l`列出可以发送的信号。这里要说一下0这个信号，0会执行所有的错误检查，并不发送信号，0只是检查一下这个进程是不是依然存在，如果该进程不存在则返回-1并将errno设置为ESRCH。⚠️，这种检查不是原子，当kill返回测试结果的时候，也许被测试的进程也就终止了。当然也可以测试当前进程是否对目标进程有权限发送信号，如果errno为EPERM表示被测试的进程存在但当前进程无权限访问。<br>
+
+#### pause
+```c
+pause - suspend the thread until a signal is received
+#include <unistd.h>
+int pause(void);
+// 专门用于阻塞当前进程，等待一个信号来打断
+```
+#### alarm
+```c
+alarm - schedule an alarm signal
+
+#include <unistd.h>
+
+unsigned alarm(unsigned seconds);
+```
+指定seconds秒，发送一个SIGALARM给自己。为0时，表示取消这个定时器， **并且新设置的值会覆盖上次设置的值**。所以当程序中出现了多个对alarm的调用，⌛️计时是不准确的。<br>
+SIGALARM默认动作时杀死进程
+```c
+#include "../include/apue.h"
+#include <pwd.h>
+
+static void my_alarm(int sig){
+    struct passwd *rootptr;
+    printf("in signal handler\n");
+    if((rootptr = getpwnam("root"))==NULL)
+        err_sys("getpwnam(root) error");
+    alarm(1); // 重新设置alarm 不断重入
+}
+
+int main(void){
+    struct passwd *ptr;
+    signal(SIGALRM,my_alarm);// 等待信号
+    alarm(1); // 发出信号 执行my_alarm
+    for(;;){
+        if((ptr = getpwnam("transcheung"))==NULL)
+            err_sys("getpwnam error");
+        if(strcmp(ptr->pw_name,"transcheung")!=0)
+            printf("return value corrupted!,pw_name=%s\n",ptr->pw_name);
+    }
+}
+```
+上面就打到了不断重入的效果，搞笑的...<br>
+来看看alarm与time的执行效率对比
+```c
+#include "../include/apue.h"
+#include <signal.h>
+
+long long count = 0;
+static volatile int flag = 1;
+
+void alarm_handler(int a){
+    flag = 0;
+}
+
+int main(void){
+    signal(SIGALRM,alarm_handler);
+    alarm(5);
+    flag = 1;
+    while(flag){
+        count++;
+    }
+    printf("%lld\n",count);
+    return 0;
+}
+```
+time
+```c
+#include <stdio.h>
+#include <time.h>
+
+int main(void){
+    long long count = 0;
+    time_t t;
+    t = time(NULL)+5; // 延迟5秒
+    while(time(NULL)<t){
+        count++;
+    }
+    printf("%lld\n",count);
+    return 0;
+}
+```
+执行效率相差1000多倍！！！。<br>
+volatile关键字，表示这个变量是随时变化的，所以告诉编译器不用优化。<br>
+### 流量控制
+播放音乐和电影的时候都要按照播放速率读取文件，而不能像cat命令一样，直接将交给它的文件用最快的速度读取出来，否则你听到的音乐就转瞬即逝了。<br>
