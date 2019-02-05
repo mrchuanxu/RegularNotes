@@ -129,3 +129,20 @@ int main(){
 }
 ```
 因为Shape定义了虚函数就会有被继承的效果，而继承之后就需要构造，而构造是从基类开始的，但是析构就是从派生类开始的。在上面的🌰中，如果操纵一个对象是通过基类提供的接口的话，那么就应该通过该接口来delete它。所以virtual就提供了这个接口，让派生类释放基类资源。<br>
+##### 类层次 (一个派生类自身也可以作为其他类的基类)
+因为一个派生类自身也可以作为其他类的基类，所以衍生出类层次的概念。<br>
+```cpp
+class Employee{};
+class Manager:public Employee{};
+class Director:public Manager{};
+```
+称一组相关的类为类层次。大多数情况下，这是一棵树🌲，但是一般也会有图的结构<br>
+例如
+```cpp
+class Temporary{};
+class Assitant:public Employee{};
+class Temp:public Temporary,public Assitant{};
+class consultant:public Temporary,public Manager{};
+```
+这样的类层次就成为了一个有向无环图结构。<br>
+##### 类型域
