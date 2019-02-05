@@ -325,6 +325,7 @@ class Character_device{
         virtual ~Character_device(){}
 }
 ```
+而纯虚函数在后面的派生类中必须实现，当然，这个含有纯虚函数的类也叫做抽象类，没有具体的对象<br>
 析构函数还是要有的。抽象类提供接口不暴露细节。<br>
 ### 访问控制 public protected private
 一个类成员可以是private、protected或public的
@@ -380,7 +381,7 @@ bool Set<T>::member(const T& item) const{
     return find(rep.begin(),rep.end(),item) != rep.end();
 }
 ```
-这个就是复合，也是has-a的意思，也是根据某物实现出的意思，那么private咧？引入private继承就会将基类都声明为private，所有的其他非派生的函数或友元函数可以使用，而如若这样
+这个就是复合，也是has-a的意思，也是根据某物实现出的意思，那么private咧？引入private继承就会将基类所有的成员都声明为private，所有的其他非派生的函数或友元函数可以使用，而如若这样
 ```cpp
 class Timer{
     public:
@@ -397,5 +398,57 @@ class Widget:private Timer{
 在Timer可以调用，但是在Widget就不可以了，这样会导致接口容易被错误使用，所以不建议这种用法。但是private继承却是不会浪费空间的，而复合是需要的，所以在很在意空间的情况下，可以选择priavet但是复合也没错，所以要审慎地选择private还是复合。<br>
 
 #### 多重继承(虚继承)与访问控制 明智而审慎地使用多重继承
+多重继承上面其实也有体现，例如Circle继承了Shape，Shape2。多重继承衍生出类层次<br>
+* 共享接口: 通过使用类使得重复代码较少，且代码规格同一。通常称为 **运行时多态**或者接口继承
+* 共享实现: 代码量较少且实现代码的规格同一，通常称为实现继承。<br>
+一个类可以综合应用接口与实现继承。<br>
+我们再看一个🌰
+```cpp
+struct Storable{
+    virtual string get_file() = 0;
+    virtual void read() = 0;
+    virtual void write() = 0;
+    virtual ~Storable(){}
+};
 
+class Transmiitter:public Storable{
+    public:
+        void write() override;
+};
+
+class Receiver:public Storable{
+    public:
+        void write() override;
+};
+
+class Radio:public Receiver,public Transmiitter{
+    public:
+        string get_file() override;
+        void read() override;
+        void write() override;
+        // ...
+};
+```
+Storable是一个抽象类，Radio有可能有两个基类也可能有一个共享的基类。这种重复的继承会给Radio使用的时候`Radio *ptr = new Radio()`造成歧义(ambiguity)<br>
+不知道调用的哪个版本，最后也就可能调用最佳匹配，但是这里没有最佳匹配的选项，这里没有选项，都是一样的函数，所以在调用的时候使用`ptr->Transmiitter::get_file();`进行显式调用。<br>
+其实多重继承的意思是继承一个以上的base classes，但是base classes并不常在继承体系中又有更高级的base classes。就像这样<br>
+```cpp
+/***
+ *       ->OutputFile->File
+ * IOFile
+ *       ->InputFile>File
+***/
+```
+这就是致命钻石级多重继承模型。任何时候，如果你有一个即成体系而其中某个base classes和某个derived class之间有一条以上的相同路线，那么就会有一个问题，是否打算让base classes内的成员变量经由每一条路径被复制?假设File class里有一个成员变量fileName，这个fileName要被复制多少遍呢？所以，继承而来的，也要取其精华，去糟粕。可以使用虚基类虚继承。<br>
+#### 虚继承 虚基类
+令所有继承File的都变成虚继承
+```cpp
+class File{};
+class InputFile:virtual public File{};
+class OutputFile:virtual public File{};
+class IOFile:public InputFile,public OutputFile{};
+```
+虚继承是一种机制，类通过虚继承指出它希望共享其虚基类的状态。在虚继承下，对给定虚基类，无论该类在派生层次中作为虚基类出现多少次，都只继承一个共享的基类子对象。<br>
+这就很好解决了不用复制太多的成员变量。毕竟virtual始终秉承着一个观点，一个接口，你可以多种方法，始终一个接口。后面的实现都会覆盖本来的方法。<br>
+### C++11新特性的四种类型转换
 

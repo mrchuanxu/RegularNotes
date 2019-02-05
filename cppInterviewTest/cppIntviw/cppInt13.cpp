@@ -45,6 +45,7 @@ class Shape{
        virtual void draw(){
             cout << "i am shape" << endl;
         }
+        virtual void nodraw() = 0;
         virtual ~Shape(){
             cout << "delete shape!" << endl;
         };
@@ -69,6 +70,9 @@ class Circle:public Shape,private Shape2{
     public:
         void print(){
             cout << "no circle" << endl;
+        }
+        void nodraw() override{
+            cout << "no draw" << endl;
         }
         ~Circle(){
             cout << "delete shape?" << endl;
@@ -106,35 +110,83 @@ struct Vector:std::vector<T>{
 //     head = p->next;
 // }
 
-template <class T>
-class Set{
-    public:
-        bool member(const T& item) const;
-        void insert(const T& item);
-        void remove(const T& item);
-        std::size_t size() const;
-    private:
-        std::list<T> rep; // 用来表述Set的数据
+// template <class T>
+// class Set{
+//     public:
+//         bool member(const T& item) const;
+//         void insert(const T& item);
+//         void remove(const T& item);
+//         std::size_t size() const;
+//     private:
+//         std::list<T> rep; // 用来表述Set的数据
+// };
+
+// template <class T>
+// bool Set<T>::member(const T& item) const{
+//     return find(rep.begin(),rep.end(),item) != rep.end();
+// }
+
+struct Storable{
+    virtual string get_file() = 0;
+    virtual void read() = 0;
+    virtual void write() = 0;
+    virtual ~Storable(){}
 };
 
-template <class T>
-bool Set<T>::member(const T& item) const{
-    return find(rep.begin(),rep.end(),item) != rep.end();
-}
+class Transmiitter:public Storable{
+    public:
+        void write() override{
+            cout << "Transmitter" << endl;
+        }
+        void read() override{
+            cout << "Transmitter read" << endl;
+        }
+        string get_file(){
+            cout << "Transmitter getfile" << endl;
+        }
+};
+
+class Receiver:public Storable{
+    public:
+        void write() override{
+            cout << "Receiver" << endl;
+        }
+        void read() override{
+            cout << "Receiver read" << endl;
+        }
+        string get_file(){
+            cout << "Receiver getfile" << endl;
+        }
+};
+
+class Radio:public Receiver,public Transmiitter{
+    public:
+        void write() override{
+            cout << "Radio" << endl;
+        }
+        void read() override{
+            cout << "Radio read" << endl;
+        }
+        string get_file() override{
+            cout << "Radio getfile" << endl;
+        }
+};
 
 int main(){
-    Vector<int> v{1,2,3,4,5,6};
-    Employee *eman = new Manager();
-    eman->first_name = "mrtrans";
-    g();
-    delete eman;
+    // Vector<int> v{1,2,3,4,5,6};
+    // Employee *eman = new Manager();
+    // eman->first_name = "mrtrans";
+    // g();
+    // delete eman;
 
-    Shape *cir = new Circle();
-    Circle *cir2 = new Circle();
-    cir->draw();
-    //cir2->draw();
-    Shape *b1 = (Shape*) cir2;
-    b1->draw();
-    delete cir;
+    // Shape *cir = new Circle();
+    // Circle *cir2 = new Circle();
+    // cir->draw();
+    // cir->nodraw();
+    // Shape *b1 = (Shape*) cir2;
+    // b1->draw();
+    // delete cir;
+    Radio *ptr = new Radio();
+    ptr->Transmiitter::get_file();
     return 0;
 }
