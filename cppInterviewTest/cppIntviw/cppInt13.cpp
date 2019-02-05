@@ -1,6 +1,7 @@
 #include <iostream>
 #include <string>
 #include <list>
+#include <vector>
 
 using namespace std;
 // class lval_box{
@@ -41,24 +42,99 @@ void g(){
 
 class Shape{
     public:
+       virtual void draw(){
+            cout << "i am shape" << endl;
+        }
         virtual ~Shape(){
             cout << "delete shape!" << endl;
         };
 };
 
-class Circle:public Shape{
+
+class Shape2{
     public:
+    Shape2(){
+        cout << "construct Shape2" <<endl;
+    }
+       virtual void draw(){
+            cout << "i am shape2" << endl;
+        }
+        virtual ~Shape2(){
+            cout << "delete shape2!" << endl;
+        };
+};
+
+
+class Circle:public Shape,private Shape2{
+    public:
+        void print(){
+            cout << "no circle" << endl;
+        }
         ~Circle(){
             cout << "delete shape?" << endl;
         }
 };
+
+template <class T>
+struct Vector:std::vector<T>{
+    using vector<T>::vector;
+    T& operator[](size_t i){check(i);return this->elem(i);}
+    const T& operator[](size_t i) const {check(i);return this->elem(i);}
+    void check(size_t i){ 
+        if(this->size() < i)
+            throw range_error("Vector::check() failed");
+    }
+};
+
+// template <typename T>
+// class List{
+//     public:
+//     void insert(T&);
+//     T get();
+// private:
+//     struct Link{
+//     T val;
+//     Link *next;
+//     };
+//     Link *head;
+
+// };
+
+// template<class T>
+// T List<T>::get(){
+//     Link *p = head;
+//     head = p->next;
+// }
+
+template <class T>
+class Set{
+    public:
+        bool member(const T& item) const;
+        void insert(const T& item);
+        void remove(const T& item);
+        std::size_t size() const;
+    private:
+        std::list<T> rep; // 用来表述Set的数据
+};
+
+template <class T>
+bool Set<T>::member(const T& item) const{
+    return find(rep.begin(),rep.end(),item) != rep.end();
+}
+
 int main(){
+    Vector<int> v{1,2,3,4,5,6};
     Employee *eman = new Manager();
     eman->first_name = "mrtrans";
     g();
     delete eman;
 
     Shape *cir = new Circle();
+    Circle *cir2 = new Circle();
+    cir->draw();
+    //cir2->draw();
+    Shape *b1 = (Shape*) cir2;
+    b1->draw();
     delete cir;
     return 0;
 }

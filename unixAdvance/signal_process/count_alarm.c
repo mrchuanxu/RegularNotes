@@ -3,6 +3,7 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <errno.h>
+
 #include <sys/types.h>
 #include <sys/stat.h>
 
@@ -31,7 +32,7 @@ int main(int argc,char **argv){
         if(fd<0){
             if(EINTR != errno){
                 err_sys("open()");
-                goto e_open;
+                goto;
             }
         }
     }
