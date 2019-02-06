@@ -274,5 +274,171 @@ int main(void){
 ```
 执行效率相差1000多倍！！！。<br>
 volatile关键字，表示这个变量是随时变化的，所以告诉编译器不用优化。<br>
-### 流量控制
-播放音乐和电影的时候都要按照播放速率读取文件，而不能像cat命令一样，直接将交给它的文件用最快的速度读取出来，否则你听到的音乐就转瞬即逝了。<br>
+### 流量控制 是Linux内核提供的流量限速、整形和策略控制机制
+播放音乐和电影的时候都要 **按照播放速率读取文件**，而不能像cat命令一样，直接将交给它的文件用最快的速度读取出来，否则你听到的音乐就转瞬即逝了。<br>
+流量控制是什么，为什么，怎么用？
+流量控制由qdisc、fitler和class三部分组成
+* qdisc通过队列将数据包缓存起来，用来控制网络首发速度
+* class用来表示控制策略
+* filter用来将数据包划分到具体的控制策略中<br>
+在这里我只是简单的介绍一下最简单的音乐速率控制，内核对流量的速率控制。<br>
+先来看一下最简单的🌰
+```c
+#include "../include/apue.h"
+#include <signal.h>
+#include <unistd.h>
+#include <fcntl.h>
+#include <errno.h>
+
+#include <sys/types.h>
+#include <sys/stat.h>
+
+#define BUFSIZE 10
+#define MAXTOKEN 1024 // 令牌桶，令牌上限 保持速度的保证
+
+// static volatile int loop = 0;
+static volatile int token = 0; // 积攒令牌数量
+static void alarm_handler(int a){
+    alarm(1); // 其实这里只是计时了1秒 每次实现自调用
+    if(token < MAXTOKEN){
+        token++; // 每秒钟增加令牌 积攒后按速度播放
+    }
+}
+
+int main(int argc,char **argv){
+    int fd = -1;
+    char buf[BUFSIZE] = "";
+    ssize_t readsize = -1;
+    ssize_t writesize = -1;
+    size_t off = 0;
+
+    if(argc < 2){
+        fprintf(stderr,"Usage %s <filepath>\n",argv[0]);
+        return 1;
+    }
+    do{ // 这里要open文件，一直要open文件
+        fd = open(argv[1],O_RDONLY);
+        if(fd<0){
+            if(EINTR != errno){
+                err_sys("open()");
+            }
+        }
+    }while(fd<0);
+
+    // loop = 1; // 设置开始循环♻️
+    signal(SIGALRM,alarm_handler);// 捕捉信号
+    alarm(1); //    发送信号 这是启动signal的alarm
+    while(1){
+        // while loop; 忙等
+        // 非忙等
+        while(token <=0){ // 如果令牌数量不足则等待添加令牌
+            pause(); // 因为添加令牌是通过信号实现的，所以可以使用pause实现非忙等
+            // 使调用进程挂起直到捕捉到一个信号
+            // SIGALRM打算pause函数，然后继续执行，每次token都会被加一减一
+        }
+        token--; // 每次读取BUFSIZE个字节的数据就扣减令牌
+        printf("token : %d\n",token);
+        while((readsize = read(fd,buf,BUFSIZE))<0){ // 开始读 每秒读10个
+            if(readsize < 0){
+                if(EINTR == errno){
+                    continue;
+                }
+                err_sys("error read()");
+                goto e_read;
+            }
+        }
+        if(!readsize){ // 读到了数据
+            break;
+        }
+        off = 0;//  偏移量设为0
+        do{
+            writesize = write(1,buf+off,readsize); // 开始写到控制台
+            off+=writesize;
+            readsize-=writesize; // 全写完
+        }while(readsize>0);
+    }
+    close(fd);
+    return 0;
+
+    e_read:
+        close(fd);
+}
+```
+注释解析得非常详细，这就是令牌桶的实现，每次令牌桶用完就归还，就像token--一样，要是令牌桶没了，就等着。这就是令牌桶的工作原理。<br>
+**令牌桶三要素:令牌、令牌上限(代码中的MAXSIZE)、流量速率(CPS)(代码中的BUFSIZE)**<br>
+设计令牌上限是为了防止令牌桶溢出，通常没有必要让令牌无限制的上涨。<br>
+### getitimer和setitimer函数
+```c
+getitimer,setitimer - get or set value of an interval timer
+
+#include <sys/time.h>
+
+int getitimer(int which,struct itimerval *curr_value);
+int setitimer(int which,const struct itimerval *new_value,struct itimerval *old_value);
+// set函数可以替代alarm
+```
+set函数有两点好
+* 精度高，微秒为计时⌛️单位
+* 从it_interval赋给it_value是采用原子操作的<br>
+setitimer直接可以构成一个类似alarm链的执行结构。也就是说，当it_value被递减为0时会发送一个信号给当前进程。并且自动将it_interval的值赋给it_value使计时从新开始。<br>
+which使用不同时间，发送不同信号📶<br>
+
+which可选宏值|对应信号
+|--|--|
+ITIMER_PROF|SIGPROF
+ITIMER_REAL|SIGALRM
+ITIMER_VIRTUAL|SIGVTALRM
+
+* new_value: 新的定时器周期
+* old_value: 由该函数回填以前设定的定时器周期，不需要保存可以设置为NULL<br>
+
+结构
+```c
+struct itimerval{
+    struct timeval it_interval; // next value
+    struct timeval it_value; // current value
+};
+
+struct timeval{
+    time_t tv_sec; // seconds
+    suseconds_t tv_usec; // microseconds
+}
+```
+递减的是it_value的值，当it_value被递减为0的时候，将it_interval的值原子化的赋给it_value。tv_sec表示以秒为单位；tv_usec表示以微秒为单位。<br>
+
+### 信号集 一种能表示一组信号的数据类型，一般都是用在批量设置信号掩码时使用
+使用sigset_t类型表示，有一组函数可以操作它。<br>
+```c
+sigemptyset, sigfillset, sigaddset, sigdelset, sigismember - POSIX signal set operations
+
+#include <signal.h>
+
+int sigemptyset(sigset_t *set);
+
+int sigfillset(sigset_t *set);
+
+int sigaddset(sigset_t *set, int signum);
+
+int sigdelset(sigset_t *set, int signum);
+
+int sigismember(const sigset_t *set, int signum);
+```
+就是对信号集中的信号进行增删查改。
+
+### sigprocmask 人为干扰信号mask位图
+```c
+sigrocmask - examine and change blocked signals
+#include <signal.h>
+
+int sigprocmask(int how, const sigset_t *set, sigset_t *oldset);
+```
+padding图是无法人为干扰的，能干扰还得了！<br>
+不能保证信号什么时候到来，但是这个函数目的就是为了决定什么时候响应信号<br>
+* how 指定如何干扰mask位图，可以使用下表中三个宏中的任何一个来指定<br>
+
+宏|含义
+|--|:--|
+SIG_BLOCK|将当前进程的信号屏蔽字和set信号集中的信号全部屏蔽，也就是它们的mask位设置为0
+SIG_UNBLOCK|将set信号集中与当前信号屏蔽字重叠的信号解除屏蔽，也就是将它们的mask位设置为1
+SIG_SETMASK|将set信号集中的信号mask位设置为0，其他信号全部恢复为1
+
