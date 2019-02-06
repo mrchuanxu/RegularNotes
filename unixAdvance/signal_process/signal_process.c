@@ -5,8 +5,13 @@
 static void handler(int s){
     write(1,"!",1);
 }
+struct point{
+    int x,y;
+}p;
 
 int main(){
+    p.x = 1;
+    char c = '\72';
     int i = 0;
     signal(SIGINT,handler);
     for(i = 0;i<10;i++){
