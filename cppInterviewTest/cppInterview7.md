@@ -450,5 +450,14 @@ class IOFile:public InputFile,public OutputFile{};
 ```
 虚继承是一种机制，类通过虚继承指出它希望共享其虚基类的状态。在虚继承下，对给定虚基类，无论该类在派生层次中作为虚基类出现多少次，都只继承一个共享的基类子对象。<br>
 这就很好解决了不用复制太多的成员变量。毕竟virtual始终秉承着一个观点，一个接口，你可以多种方法，始终一个接口。后面的实现都会覆盖本来的方法。<br>
-### C++11新特性的四种类型转换
-
+##### 深入了解虚拟继承对象模型
+为了解决多份拷贝的问题，引入了虚继承，看如下一个🌰
+```cpp
+class MyClassA:virtual public MyClass
+class MyClassB:virtual public MyClass
+class MyClassC:public MyClassA,public MyClassB
+```
+那么除了秉承这个观点还有什么呢？没错，还有一个虚基类表vbtable。虚继承的引入把对象的模型变得十分复杂，除了每个基类(MA和MB)和公共基类(M)的虚函数表指针需要记录📝外，每个虚拟继承了MyClass的父类还需要记录一个虚基类表vbtable的指针vbptr。<br>
+![MyClassC的对象模型](./img/Myclass.jpg)<br>
+虚基类表每一项记录📝了被继承的虚基类子对象相对于虚基类表指针的偏移量。参考[虚函数与虚继承寻踪](http://www.cnblogs.com/fanzhidongyzby/archive/2013/01/14/2859064.html)<br>
+呼，虚...
