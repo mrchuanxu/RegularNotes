@@ -172,6 +172,8 @@ class Radio:public Receiver,public Transmiitter{
         }
 };
 
+#define size 10
+char str[size],str2[size+2];
 int main(){
     // Vector<int> v{1,2,3,4,5,6};
     // Employee *eman = new Manager();
@@ -186,7 +188,14 @@ int main(){
     // Shape *b1 = (Shape*) cir2;
     // b1->draw();
     // delete cir;
-    Radio *ptr = new Radio();
-    ptr->Transmiitter::get_file();
+    // Radio *ptr = new Radio();
+    // ptr->Transmiitter::get_file();
+    int num = 7,sum =7;
+    sum = num++;
+    sum++;
+    ++num;
+    cout << sum << endl;
+    int n = 5;
+    int a[n][n+2];
     return 0;
 }
