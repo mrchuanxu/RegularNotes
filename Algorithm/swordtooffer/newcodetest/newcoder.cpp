@@ -68,6 +68,7 @@ public:
          return count;
      }
 
+
 int main(){
     // vector<int> pre{1,2,4,7,3,5,6,8};
     // vector<int> vin{4,7,2,1,5,3,8,6};
@@ -84,11 +85,13 @@ int main(){
     // cout << "f" << i << endl;
     // const char *str = "testssssssss";
     // cout << strlen(str)<<endl;
-    vector<int> vec{1,2,3};
-    vector<int> vec3{3,4,5};
-    vec = vec3;
-    for(auto iter:vec){
-        cout << iter << endl;
-    }
+    // vector<int> vec{1,2,3};
+    // vector<int> vec3{3,4,5};
+    // vec = vec3;
+    // for(auto iter:vec){
+    //     cout << iter << endl;
+    // }
+    char s[]="\\123456\123456\t";
+    printf("%d\n",strlen(s));
     return 0;
 }
