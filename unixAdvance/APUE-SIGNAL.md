@@ -442,3 +442,274 @@ SIG_BLOCK|将当前进程的信号屏蔽字和set信号集中的信号全部屏�
 SIG_UNBLOCK|将set信号集中与当前信号屏蔽字重叠的信号解除屏蔽，也就是将它们的mask位设置为1
 SIG_SETMASK|将set信号集中的信号mask位设置为0，其他信号全部恢复为1
 
+set: 需要被干扰mask位图的信号集<br>
+oldset: 由该函数回填之前被打扰的信号集<br>
+使用这个函数，修改一下mask位图，尝试重写打印✨和❕的程序<br>
+每次打印5个✨，然后停止，收到SIGINT信号不会立即响应，而是等待本行打印结束后再响应，并且在收到信号之后再打印下一行
+```c
+#include <stdio.h>
+#include <stdlib.h>
+#include <signal.h>
+#include <unistd.h>
+
+static void int_handler(int s){
+    write(1,"!",1);
+}
+
+int main(){
+    sigset_t set,oset,saveset;
+    int i,j;
+
+    signal(SIGINT,int_handler); 
+    // 这里要是改为实时信号，那么收到多少个信号就打印多少行星号
+    printf("signal_print\n");
+    sigemptyset(&set); // 置空信号
+    sigaddset(&set,SIGINT); // 赋值信号
+
+    sigprocmask(SIG_UNBLOCK,&set,&saveset); // 解除屏蔽 mask设为1 这里保证mask值一定为1
+
+    sigprocmask(SIG_BLOCK,&set,&oset); // 屏蔽信号 mask设为0
+
+    for(j = 0;j<10000;j++){
+        for(i = 0;i<5;i++){
+            write(1,"*",1);
+            sleep(1); // 这里实现每一秒打印一次
+        }
+        write(1,"\n",1);
+        sigsuspend(&oset); //   等待被信号打断，再重新屏蔽信号 这里的mask置为1
+    }
+
+    sigprocmask(SIG_SETMASK,&saveset,NULL); // mask恢复0，其他信号恢复为1
+    exit(0);
+}
+```
+打印每行✳️之前先屏蔽信号，当打印完成之后再恢复信号，然后等待被信号打断，再重新屏蔽信号，打印信号，但是为什么按下Ctrl+C就可以打印下一行还有❕，因为打印✳️之前我们屏蔽了mask位，就是设为0，收到信号时，与padding求&，计算得出0，所以不响应信号。当✳️打印完了，就pause，suspend这里有个pause等待被信号打断，所以打印一个❕继续打印✳️，这就是sigsuspend函数的原子化功劳。<br>
+
+### sigpending 获取当前收到但是没有响应的信号集
+系统调用，所以当它从内核中返回的时候需要对信号位图做&操作，相应的信号已经被处理了，所以当它返回用户态的时候，它带回来的结果可能不准确了。除非调用它之前先把所有信号都block,`sigprocmask(SIG_BLOCK,&set,&oset); `像这样，然后再调用它，返回的结果才准确。emmm，开发中没啥用途<br>
+```c
+sigpending - examine pending signals
+#include <signal.h>
+
+int sigpending(sigset_t *set);
+```
+###  sigaction 用来替换signal 多使用这个，丢弃signal
+```c
+sigaction - examine and change a signal action
+
+#include <signal.h>
+
+int sigaction(int signum,const struct sigaction *act, struct sigaction *oldact);
+```
+signum: 要设定信号处理函数的信号<br>
+act: 对信号处理函数的设定<br>
+oldact: 由函数回填之前的信号处理函数设定，备份用，如果不需要可以填NULL<br>
+```c
+struct sigaction{
+    // 前两个是信号处理函数，二选一，在某些平台伤是一个共用体
+    void (*sa_handler)(int); // 为了兼容signal函数
+    void (*sa_sigaction)(int,siginnfo_t*,void *);
+    // 第二个参数可以获得信号的来源和属性
+    sigset_t sa_mask; // 信号集位图，指定要处理的信号集，并且信号集中的任何一个信号被触发时，信号集中的其他成员同时会被block，避免像signal的信号处理函数一样当多个信号同时到来时发生重入
+    int sa_flags; // 特殊要求，如果使用三参的信号处理函数，需要指定为SA_SIGINFO
+    void (*sa_restorer)(void); // 基本被废弃了
+};
+```
+其实就是要让信号重入的时候有个好的处理，排队处理。其他成员被block，防止重入。也是一个原子操作了。<br>
+一般一个参数的信号处理函数和三个参数的信号处理函数，使用哪个都行，一般一个参数就够用了。<br>
+给个sigaction的🌰，怼一下不靠谱的signal<br>
+```c
+#include "../include/apue.h"
+#include <fcntl.h>
+#include <string.h>
+#include <syslog.h>
+
+#define Fname "/tmp/out"
+
+static FILE *fp;
+
+static int Daemonize(void){
+    pid_t pid;
+    int fd;
+
+    pid = fork();
+    if(pid<0){
+       // err_sys("fork error");
+        return -1;
+    }
+    if(pid>0)
+        exit(0);
+    
+    fd = open("/dev/null",O_RDWR);
+    if(fd<0)
+        return -2;
+    
+    dup2(fd,0);
+    dup2(fd,1);
+    dup2(fd,2);
+
+    if(fd > 2)
+        close(fd);
+    
+    setsid();
+    chdir("/");
+    umask(0); // 设置文件模式创建掩码
+    return 0;
+}
+
+static void daemon_exit(int s){
+    fclose(fp);
+    closelog();
+    syslog(LOG_INFO,"daemonixe exited");
+    exit(0);
+}
+
+int main(){
+    int i;
+    struct sigaction sa;
+
+    /***
+     * 如果使用 signal(2) 函数则是这样注册信号处理函数
+     * signal(SIGINT,daemon_exit);
+     * signal(SIGTERM,daemon_exit);
+     * signal(SIGQUIT,daemon_exit);  ***/
+    // 改用sigaction
+    sa.sa_handler = daemon_exit;
+    sigemptyset(&sa.sa_mask);
+    sigaddset(&sa.sa_mask,SIGQUIT);// 信号集加入了三个不同的信号
+    sigaddset(&sa.sa_mask,SIGTERM);
+    sigaddset(&sa.sa_mask,SIGINT);
+    // 任意信号想要杀死进程，把资源释放掉再结束即可
+    sa.sa_flags = 0;
+    sigaction(SIGINT,&sa,NULL); // 不需要区分那个信号，只要信号来了就可以傻死进程，然后释放资源
+    sigaction(SIGTERM,&sa,NULL);
+    sigaction(SIGQUIT,&sa,NULL);
+
+    openlog("mydaemon",LOG_PID,LOG_DAEMON);
+
+    if(Daemonize()){
+        syslog(LOG_ERR,"daemonize failed");
+        exit(1);
+    }else{
+        syslog(LOG_INFO,"daemonize succssed");
+    }
+    fp = fopen(Fname,"w");
+    if(fp == NULL){
+        syslog(LOG_ERR,"fopen():%s",strerror(errno));
+        exit(1);
+    }
+
+    for(i = 0;;i++){
+        fprintf(fp,"%d\n",i); // 每秒钟写一个序列
+        fflush(fp);
+        syslog(LOG_DEBUG,"%d was printed",i);
+        sleep(1);
+    }
+    exit(0);
+}
+```
+当多个信号同时到来的时候，一定会发生内存泄漏。因为signal函数在一个信号到来的时候，不会把其他注册了同一个信号处理函数的信号屏蔽掉，这就是要怼signal的地方，这样信号处理函数会发生重入咯。<br>
+所以使用sigaction还是比较安全的，因为它屏蔽掉了其他信号。<br>
+### setjmp和sigsetjmp 信号处理函数不能使用跨函数长跳转！但是sigsetjmp来打救你
+```c
+sigsetjmp - save stack context for nonlocl goto
+
+#include <setjmp.h>
+
+int sigsetjmp(sigjmp_buf env, int savesigs);
+```
+如果savesigs为真，跳转的时候保存信号掩码，为假就不保存信号掩码。<br>
+```c
+#include <stdio.h>
+#include <setjmp.h>
+#include <signal.h>
+#include <unistd.h>
+
+static sigjmp_buf env;
+
+static void fun(void){
+    long long i = 0;
+    sigsetjmp(env,1); // jmp的位置
+    printf("before %s\n",__FUNCTION__);
+    for(i = 0;i<1000000000;i++);
+    printf("end%s\n",__FUNCTION__);
+}
+
+static void a_handler(int s){
+    printf("before %s\n",__FUNCTION__);
+    siglongjmp(env,1); // 这里恢复了信号
+    printf("end%s\n",__FUNCTION__);
+}
+
+int main(void){
+    long long i=0;
+    struct sigaction sa;
+    // 改用sigaction
+    sa.sa_handler = a_handler;
+    sigemptyset(&sa.sa_mask);
+    sigaddset(&sa.sa_mask,SIGINT);
+    // 任意信号想要杀死进程，把资源释放掉再结束即可
+    sa.sa_flags = 0;
+    sigaction(SIGINT,&sa,NULL);
+    fun();
+
+for(i = 0;;i++){
+    printf("%lld\n",i);
+    pause(); // 等待信号打断等待 
+}
+}
+```
+### abort 发送一个SIGABRT，终止+产生coredump文件 自杀的时候用
+```c
+abort - cause abnormal process termination
+
+#include <stdlib.h>
+void abort(void);
+```
+避免缺陷扩散，自杀的时候使用
+
+### system (自建系统命令)
+
+### select
+```c
+select - synchronous I/O multiplexing
+
+#include <sys/select.h>
+
+int select(int nfds,fd_set *readfds,fd_set *writefds,fd_set *exceptfds,struct timeval *timeout);
+```
+安全的定时器🔐。看🌰
+```c
+#include "../include/apue.h"
+#include <sys/select.h>
+
+int main(void){
+    int i = 0;
+    struct timeval timeout;
+
+    for(i = 0;i<5;i++){
+        timeout.tv_sec = 1;
+        timeout.tv_usec = 0;
+// 定时器只需要给定时间就可可以了
+        if(select(0,0,0,0,&timeout)<0){
+            err_sys("select()");
+            exit(1);
+        }
+        printf("hehe\n");// 不写\n就会全缓冲
+        // 写了\n就是行缓冲
+    }
+    return 0;
+}
+```
+一个定时器的功能。select作用还是蛮大的，在第14章会持续讲。<br>
+### sigsuspend 原子操作，等待信号打断
+```c
+sigsuspend - wait for a signal
+
+#include <signal.h>
+
+int sigsuspend(const sigset_t *mask);
+```
+🌰上面sigrocmask已经展示了。<br>
+### 实时信号 32-64
+实时信号按队列来处理，先到先响应。信号是否会排队或丢失，取决于使用那种信号，而且实时信号不采用位图来实现，而是采用链式结构来实现。
