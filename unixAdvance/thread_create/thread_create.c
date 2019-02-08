@@ -1,27 +1,32 @@
-#include <stdio.h>
-#include <stdlib.h>
+
 #include <pthread.h>
 #include <string.h>
-#include <unistd.h>
+#include "../include/apue.h"
 
-static void *func(void *p){
-    puts("Thread is working.");
-    sleep(10);
-    pthread_exit(NULL); // 返回
+
+pthread_t ntid;
+
+void printids(const char *s){
+    pid_t pid;
+    pthread_t tid;
+
+    pid = getpid(); // 获得当前进程id
+    tid = pthread_self();
+    printf("%s pid %lu tid %lu(0x%lx)\n",s,(unsigned long)pid,
+    (unsigned long)tid,(unsigned long)tid);
 }
 
-int main(){
-    pthread_t tid;
+void* thr_fn(void *arg){
+    printids("new thread:");
+    return((void *)0);
+}
+
+int main(void){
     int err;
-    puts("Begin!");
-
-    err =  pthread_create(&tid,NULL,func,NULL);
-    if(err){
-        fprintf(stderr,"pthread create():%s\n",strerror(err));
-        exit(1);
-    }
-
-    pthread_join(tid,NULL);
-    puts("End!");
+    err = pthread_create(&ntid,NULL,thr_fn,NULL);
+    if(err!=0)
+        err_exit(err,"can't create thread");
+    printids("main thread:");
+    sleep(1);
     exit(0);
 }
