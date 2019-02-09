@@ -285,6 +285,7 @@ Compile and link with -pthread.
 ### 互斥量(pthread_mutex_t) 解决竞争
 多线程就是为了充分利用硬件资源，使程序可以并发的运行，但是只要是并发就会遇到竞争问题。互斥量就是为了解决竞争的多种手段之一。<br>
 💭考虑一个问题，如何让20个线程同时从一个文件中读取数字。累加1，然后再写入回去，并保证程序运行后，文件中的数值比运行程序之前大20.<br>
+c文件
 ```c
 #include "../include/apue.h"
 #include <fcntl.h>
@@ -403,4 +404,344 @@ int main(){
 每个线程都在等待互斥量解锁，一旦解锁就执行，每个线程负责打印一个字母，每个字母都在ch的基础上➕1。<br>
 **互斥量限制一段代码能否执行，而不是一个变量或一个资源。**<br>
 ### 条件变量 pthread_cond_t
-令牌桶，通用多线程并发版令牌桶
+令牌桶，通用多线程并发版令牌桶<br>
+```c
+#include "../include/apue.h"
+#include <fcntl.h>
+#include <pthread.h>
+
+#include "mytbf.h"
+
+// 每个令牌桶
+struct mytbf_st{
+    int cps; // 速率
+    int burst; // 令牌上限
+    int token; // 可用令牌数量
+    int pos; // 当前令牌桶在job 数组中的下标
+    pthread_mutex_t mut; // 用来保护令牌竞争的互斥量
+    //下面时为了用于在令牌互斥量状态改变时发送通知而添加的
+    pthread_cond_t cond;
+};
+
+// 所有的令牌桶
+static struct mytbf_st *job[MYTBF_MAX];
+// 用来保护令牌桶数组竞争的互斥量
+static pthread_mutex_t mut_job = PTHREAD_MUTEX_INITIALIZER;
+// 添加令牌的线程ID
+static pthread_t tid;
+// 初始化添加令牌的线程
+static pthread_once_t init_once = PTHREAD_ONCE_INIT;
+
+// 线程处理函数：负责定时向令牌桶中添加令牌
+static void *thr_alrm(void *p){
+    int i;
+    while(1){
+        pthread_mutex_lock(&mut_job);
+        // 遍历所有桶
+        for(i = 0;i<MYTBF_MAX;i++){
+            // 为可用的桶添加令牌
+            if(job[i]!=NULL){
+                pthread_mutex_lock(&job[i]->mut);
+                job[i]->token += job[i]->cps;
+                // 控制桶中可用的令牌不能超过上限
+                if(job[i]->token > job[i]->burst)
+                    job[i]->token = job[i]->burst;
+                // 令牌添加完毕之后，通知多有等待使用令牌的线程准备抢🔒
+                pthread_cond_broadcast(&job[i] ->cond);
+                // 广播📢通知
+                pthread_mutex_unlock(&job[i]->mut);
+            }
+        }
+        pthread_mutex_unlock(&mut_job);// 解锁互斥量
+        sleep(1);// 等待一秒钟后继续添加令牌
+    }
+    pthread_exit(NULL);
+}
+static void module_unload(void){
+    int i;
+    pthread_cancel(tid);
+    // 终止某线程
+    pthread_join(tid,NULL);
+    // 等待线程终止
+    pthread_mutex_lock(&mut_job);
+    // 锁住互斥量
+    for(i = 0;i<MYTBF_MAX;i++){// 遍历所有的桶
+        if(job[i]!=NULL){
+            // 销毁所有的桶
+            pthread_mutex_destroy(&job[i]->mut);
+            // 通知销毁
+            pthread_cond_destory(&job[i]->cond);
+            free(job[i]);
+        }
+    }
+    pthread_mutex_unlock(&mut_job);
+    pthread_mutex_destroy(&mut_job);
+}
+
+static void module_load(void){
+    int err;
+    // 创建线程
+    err = pthread_create(&tid,NULL,thr_alrm,NULL);
+    if(err){
+        fprintf(stderr,"pthread_create():%s\n",strerror(err));
+        exit(1);
+    }
+    atexit(module_unload);
+}
+/***
+ * 为了不破坏调用者对令牌桶操作的原子性
+ * 在该函数内加锁可能导致死锁
+ * 所以该函数内部无法加锁
+ * 必须在调用该函数之前先加锁
+ * ***/
+static int get_free_pos_unlocked(void){
+    int i;
+    for(i = 0;i<MYTBF_MAX;i++){
+        if(job[i]==NULL)
+            return i;
+    }
+    return -1;
+}
+
+mytbf_t *mytbf_init(int cps,int burst){
+    struct mytbf_st *me;
+    int pos;
+
+    pthread_once(&init_once,module_load);
+// 保证module_load只调用一次 向令牌桶添加令牌的线程只需要启动一次
+    me = malloc(sizeof(*me));
+    if(NULL == me)
+        return NULL;
+    
+    me->cps = cps;
+    me->burst = burst;
+    me->token = 0;
+
+    pthread_mutex_init(&me->mut,NULL);
+    // 初始化conditation
+    pthread_cond_init(&me->cond,NULL);
+
+    pthread_mutex_lock(&mut_job);
+// 先加锁🔒
+    pos = get_free_pos_unlocked();
+    if(pos<0){
+        // 带锁跳转，先解锁再跳转
+        pthread_mutex_unlock(&mut_job);
+        free(me);
+        return NULL;
+    }
+
+    me->pos = pos;
+
+    job[pos] = me;
+
+    pthread_mutex_unlock(&mut_job);
+
+    return me;
+}
+
+static inline int min(int a,int b){
+    return (a<b)?a:b;
+}
+
+int mytbf_fetchtoken(mytbf_t *ptr,int size){
+    int n;
+    struct mytbf_st *me = ptr;
+
+    if(size < 0)
+        return -EINVAL;
+    pthread_mutex_lock(&me->mut);
+    // 令牌数量不足，就等待令牌被添加进来
+    // 这里出现了忙等 所以可以更改一个使用条件变量的方式
+    // 
+    while(me->token <= 0){
+        /***
+         * 原子化的解锁，出让调度器再抢🔒以便工作或等待
+         * 他会等待其他线程发送通知再唤醒
+         * 放在循环中是因为可能同时有多个线程再使用同一个桶
+         * 被唤醒时未必就能拿得到令牌，所以直到拿到令牌再跳出去
+         * ***/
+        // pthread_cond_wait(&me->cond,&me->mut); ⬅️改用了这个就变成上面说得原子操作
+        pthread_mutex_unlock(&me->mut);
+        sched_yield();// 作用是出让调度器
+        pthread_mutex_lock(&me->mut);
+    }
+
+    n = min(me->token,size);
+    me->token -= n;
+
+    pthread_mutex_unlock(&me->mut);
+
+    return n;
+}
+
+// 令牌用不完就归还，不能浪费
+int mytbf_returntoken(mytbf_t *ptr,int size){
+    struct mytbf_st *me = ptr;
+    if(size < 0)
+        return -EINVAL;
+    pthread_mutex_lock(&me->mut);
+
+    me->token += size;
+    if(me->token > me->burst)
+        me->token = me->burst;
+    /***
+     * 令牌归还完毕，通知其他正在等待令牌的线程📢，准备抢🔒
+     * 先广播📢再解锁，收到通知的线程就会等锁释放就去抢
+     * 先解锁，就会有线程先抢到锁，再广播说抢到了锁
+     * ***/
+    pthread_cond_broadcast(&me->cond);
+    pthread_mutex_unlock(&me->mut);
+
+    return size;
+}
+
+void mytbf_destory(mytbf_t *ptr){
+    struct mytbf_st *me = ptr;
+
+    pthread_mutex_lock(&mut_job);
+    job[me->pos] = NULL;
+    pthread_mutex_unlock(&mut_job);
+
+    pthread_mutex_destroy(&me->mut);
+    pthread_cond_destory(&me->cond);
+    free(ptr);
+}
+```
+头文件
+```c
+#ifndef MYTBF_H_
+#define MYTBF_H_
+
+#define MYTBF_MAX 1024
+typedef void mytbf_t;
+
+mytbf_t *mytbf_init(int cps,int burst);
+
+int mytbf_fetchtoken(mytbf_t *,int);
+
+int mytbf_returntoken(mytbf_t *,int);
+
+void mytbf_destory(mytbf_t*);
+
+#endif
+```
+支持1024个令牌桶，多线程可以同时操作1024个桶来获得不同的速率，每个桶的速率是固定的。<br>
+1024个桶保存在一个数组中，所以每次访问桶的时候都需要对它进行加锁，避免多个线程同时访问发生竞争。同样每个桶也允许使用多个线程同时访问，所以每个桶中也需要一个互斥量来保证处理令牌的时候不会发生竞争。<br>
+⚠️临界区的跳转，通常在跳转之前需要解锁🔓，不然容易发生死锁。常见的跳转有continue，break，return，goto，longjmp等等以及函数调用。反正就是变了个地方跑，就是跳转<br>
+##### 当某个函数包含临界区，也就是需要加锁再进入临界区 _unlocked作为后缀
+从程序布局来看该函数无法加锁，根据POSIX标准约定，这种函数的命名规则是必须以_unlocked作为后缀，所以，在这样的函数时在调用之前一定要先加锁。**有_unlocked，需要加锁没加锁，所以需要先加锁在调用。**<br>
+#### sched_yield 和 pthread_once
+```c
+sched_yield - yield the processor
+#include <sched.h>
+int sched_yield(void);
+```
+出让调度器，在用户态无法模拟实现，会让当前线程所占用的调度器给其他线程使用，而不必等待时间片耗尽才切换调度器，暂时可以 **理解成一个很短暂的sleep**。一般用于在使用一个资源时需要同时获得多把锁但是却没法一次性获得全部的锁的场景下，只要有任何一把锁没抢到，就立即释放自己已抢到的锁，并让出自己的调度器让其他线程有机会获得被自己释放的锁🔒。当再次调度到自己时再重新抢🔒锁，直到能一次性抢到所有的锁时再进入临界区。**避免了死锁**<br>
+```c
+pthread_once - dynamic package initialization
+
+#include <pthread.h>
+
+int pthread_once(pthread_once_t *once_control,void(*init_routine)(void));
+
+pthread_once_t once_control = PTHREAD_ONCE_INIT;
+```
+**pthread_once函数一般用于动态单次初始化，它能保证init_routine函数仅被调用一次**<br>
+**pthread_once_t 只能使用PTHREAD_ONCE_INIT宏初始化**，没有提供其他初始化方式。
+向令牌桶添加令牌的线程只需要启动一次，而初始化令牌桶的函数却在开启每个令牌桶的时候都需要调用。为了初始化令牌桶的函数中仅启动一次添加令牌的线程，采用pthread_once函数来创建线程就可以了。 **这样之后在第一次调用mytbf_init()函数的时候会启动新线程添加令牌，而后续再调用mytbf_init()的时候就不会启动添加令牌的线程了。**<br>
+##### 通知法和查询法
+后面加上了pthread_cond就是通知法，通知线程，有资源了，来抢来抢。<br>
+也即是条件变量pthread_cond
+### pthread_cond 让线程以无竞争的形式等待某个条件的发生
+当条件发生时通知等待的线程醒来去做某件事情。<br>
+两种方式
+* 仅通知一个线程醒来，如果有多个线程等待，也不一定谁会被唤醒
+* 所有都唤醒，来抢就好
+```c
+pthread_cond_destroy, pthread_cond_init - destroy and initialize condition variables
+
+#include <pthread.h>
+
+int pthread_cond_destroy(pthread_cond_t *cond);
+int pthread_cond_init(pthread_cond_t *restrict cond,const pthread_condattr_t *restrict attr);
+pthread_cond_t cond = PTHREAD_COND_INITIALIZER;
+```
+与互斥量，这样条件变量也会有初始化。一种是使用pthread_cond_init()一种时使用PTHREAD_COND_INITIALIZER宏。
+**条件变量使用完是要销毁的，否则内存泄漏**
+```c
+pthread_cond_broadcast,pthread_cond_signal - broadcast or signal a condition
+
+#include <pthread.h>
+int pthread_cond_broadcast(pthread_cond_t *cond);
+int pthread_cond_signal(pthread_cond_t *cond);
+```
+这两个函数就是条件变量的关键操作，pthread_cond_signal函数用于唤醒当前多个等待线程中的任何一个。跟signal没有任何关系<br>
+broadcast就是广播📢，惊死人不知道一样，唤醒所有等待的线程。<br>
+但是上面唤醒的是什么线程呢？
+```c
+pthread_cond_timedwait,pthread_cond_wait - wait on a condition
+#include <pthread.h>
+int pthread_cond_timewait(pthread_cond_t *restrict cond,pthread_mutex_t *restrict mutex, const struct timespec *restrict abstime);
+// 增加超时功能，超时之后，无论能否拿到锁都返回，就是尝试等
+int pthread_cond_wait(pthread_cond_t *restrict cond,pthread_mutex_t *restirct mutex);
+// 再临界区外阻塞等待某一个条件发生变化，直到有一个通知到来打断它的等待。死等
+```
+唤醒的是_wait()的等待条件满足的线程。当一个线程做某件事情之前发现条件不满足就会用这两函数进入等待状态，如果满足了，就会用上面的唤醒来唤醒线程继续工作。<br>
+等待⌛️常常放在一个循环里，就像令牌桶的🌰，因为可能有多个线程都在等待条件满足，当前的线程被唤醒时，不一定执行条件满足，可能先被唤醒的线程发现条件满足就去工作了，等轮到当前线程调度的时候，条件可能又不满足了，所以条件不满足就继续等。<br>
+互斥量与条件变量实现疯狂打印abcd，5秒钟。<br>
+```c
+#include "../include/apue.h"
+#include <pthread.h>
+#include <string.h>
+
+#define THRNUM 4
+static pthread_mutex_t mut = PTHREAD_MUTEX_INITIALIZER;
+static pthread_cond_t cond_num = PTHREAD_COND_INITIALIZER;
+static int num = 0;
+static int next(int a){
+    if(a+1 == THRNUM) // 0，1，2，3
+        return 0;
+    return a+1;
+}
+
+static void *thr_func(void *p){
+    int n = (int)p;
+    int ch = n+'a';
+    while(1){
+        pthread_mutex_lock(&mut);// 先抢🔒锁住自己的互斥量
+        while(num!=n){ // 抢到锁，发现不是自己执行，就释放锁，等，出让调度器
+            pthread_cond_wait(&cond_num,&mut);
+        }
+        write(1,&ch,1);
+        num = next(num);
+        // 打印完就送锁
+        pthread_cond_broadcast(&cond_num);
+        pthread_mutex_unlock(&mut);// 🔓解锁下一线程对应的互斥量
+    }
+    pthread_exit(NULL);
+}
+
+int main(){
+    int i,err;
+    pthread_t tid[THRNUM];
+    for(i = 0;i<THRNUM;i++){
+        // 直接执行四个线程，不需要先锁住
+        err = pthread_create(tid+i,NULL,thr_func,(void*)i);
+        if(err){
+            fprintf(stderr,"pthread_create():%s\n",strerror(err));
+            exit(1);
+        }
+    }
+    alarm(5);
+    for(i = 0;i<THRNUM;i++){
+        pthread_join(tid[i],NULL);
+    }
+    pthread_cond_destroy(&cond_num);
+
+    exit(0);
+}
+```
+### 一个进程最多能创建多少个线程？ulimit 查看栈空间大小 阴影区剩余空间的大小/栈空间的大小 == 线程数量
+* PID耗尽，内核最小的执行单元其实是线程，实际上线程消耗的也是PID
+* C程序地址空间布局时的阴影区域被栈空间占满了。<br>
