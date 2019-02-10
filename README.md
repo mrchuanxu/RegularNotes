@@ -124,6 +124,8 @@ apue巨著，每天读一个小时，理解并深入每个知识点，对进程�
 * [进程关系(会话，进程组，进程)与守护进程(setsid)](./unixAdvance/APUE-PROCESS_RELATIVE_DEFEND.md)
 * [信号，进程与线程异步的思想](./unixAdvance/APUE-SIGNAL.md)
 * [线程，就是一个正在运行的函数](./unixAdvance/APUE-THREAD.md)
+* [线程控制，根据线程的属性，pthread_kill](./unixAdvance/APUE-THREAD_CONTROL.md)
+
 ### 现代操作系统
 开始学习操作系统的知识，分为进程与线程，内存管理，文件系统，输入输出，死锁。不会看书，只会不断查博客，然后做知识总结。
 * [进程与线程，很抽象](./OS/process_thread.md)
