@@ -58,7 +58,7 @@ int main(void){
 
     quitflag = 0;
 
-    if(sigprocmask(SIG_SETMASK,&oldmask,NULL)<0) // sigpromask 重置mask位图q
+    if(sigprocmask(SIG_SETMASK,&oldmask,NULL)<0) // sigpromask 重置mask位图
         err_sys("SIG_SETMASK error");
     exit(0);
 }
