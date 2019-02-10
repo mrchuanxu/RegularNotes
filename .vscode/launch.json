@@ -9,7 +9,7 @@
         "type": "cppdbg",
         "request": "attach",
         //"program": "${workspaceFolder}/Cpp_Program/newCoder/protest.t",
-        "program": "${workspaceFolder}/Algorithm/merge_nums/merge_nums.t",
+        "program": "${workspaceFolder}/Algorithm/back_origin/back_origin.t",
         //"program": "${workspaceFolder}/Algorithm/singleLinkOper/singleLinkOper.t",
         "processId": "${command:pickProcess}",
         "MIMode": "lldb"
@@ -19,7 +19,7 @@
             "type": "cppdbg",
             "request": "launch",
             //"program": "${workspaceFolder}/Cpp_Program/newCoder/protest.t",
-            "program": "${workspaceFolder}/Algorithm/merge_nums/merge_nums.t",
+            "program": "${workspaceFolder}/Algorithm/back_origin/back_origin.t",
             //"program": "${workspaceFolder}/Algorithm/singleLinkOper/singleLinkOper.t",
             "args": [],
             "stopAtEntry": false,
