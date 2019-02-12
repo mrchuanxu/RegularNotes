@@ -77,8 +77,8 @@ void func(int i,int coutweight,int items[],int n,int w){
         if(coutweight > maxW) maxW = coutweight;
         return;
     }
-    // func(i+1,cw,items,n,w);
-    if(coutweight + items[i]<=w){ // 没超过背包承受的重量，就装
+    func(i+1,coutweight,items,n,w);// 不装 不装的条件是目前countweight已经等于w了
+    if(coutweight + items[i]<=w){ // 没超过背包承受的重量，就装 条件是countweight还小
         result[i] = items[i];
         func(i+1,coutweight+items[i],items,n,w);
     }

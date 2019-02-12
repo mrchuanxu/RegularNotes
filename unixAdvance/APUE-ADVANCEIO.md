@@ -592,14 +592,203 @@ int fcntl(int fd,int cmd,.../*struct flock *flockptr*/);
 记录📝锁，cmd是F_GETLK,F_SETLK或F_SETLKW。第三个参数(我们将调用flockptr)是一个指向flock结构的指针<br>
 ```c
 struct flock{
-    short l_type; // F_RDLCK,F_WRLCK,or F_UNLCK
-    short l_whence; // SEEK_SET, SEEK_CUR,or SEEK_END
-    off_t l_start; // offset in bytes, relative to l_whence
-    off_t l_len; // length,in bytes;0 means lock to EOF
-    pid_t l_pid; // returned with F_GETLK
+    short l_type; // F_RDLCK,F_WRLCK,or F_UNLCK 锁定的状态
+    short l_whence; // SEEK_SET, SEEK_CUR,or SEEK_END 决定lstart的位置
+    off_t l_start; // offset in bytes, relative to l_whence 锁定区域的开头位置
+    off_t l_len; // length,in bytes;0 means lock to EOF 锁定区域大大小
+    pid_t l_pid; // returned with F_GETLK 锁定动作的进程
 }
 ```
 * F_RDLCK(共享读锁),F_WRLCK(独占性写锁),or F_UNLCK(解锁一个区域)
-* 要加锁或解锁的区域的其实字节偏移量l_start和l_whence
+* 要加锁或解锁的区域的起始字节偏移量l_start和l_whence
 * 区域字节长度l_len
 * 进程ID(l_pid)持有的锁能阻塞当前进程
+<br>
+关于加锁或解锁区域的说明还要注意下列几项规则
+
+* 指定区域起始偏移量的两个元素与lseek函数中最后两个参数类似。l_whence可选用的值是SEEK_SET、SEEK_CUR或SEEK_END
+* 锁🔒可以在当前文件尾端处开始或者越过尾端处开始，但是不能在文件起始位置之前开始
+* 如若l_len为0，则表示锁的防伪可以扩展到最大的可能偏移量。这意味着不管向该文件中追加写了多少数据，它们都可以处于锁🔒的范围内(不必猜测会有多少字节被追加写到了文件之后)，而且起始位置可以是文件中的任意一个位置 **加锁整个文件，通常是将l_start说明为0，l_whence说明为seek_set，l_len说明为0**
+* 为了对整个文件加锁🔒，我们设置了l_start和l_whence指向文件的起始位置，并且指定长度(l_len)为0.
+
+任意多个进程在一个给定的字节上可以有一把共享的读锁，但是只能有一个进程有一把 **独占写锁。**<br>
+**单进程不适用**，单进程只有一把锁，要么换，要么持续用该锁。<br>
+**加读锁，该描述符必须是读打开的。加写锁，该描述符是写打开的。**<br>
+
+cmd是三种命令的参数，以下是这三种命令
+
+命令|描述
+|--|:--|
+F_GETLK|根据lock的描述，决定是否上文件锁🔒
+F_SETLK|设置lock描述的文件锁🔒
+F_SETLKW|这个命令是F_SETLK的阻塞版本wait。如果存在其他锁，则调用进程睡眠；如果捕捉到信号则睡眠中断
+
+以上都不是原子操作，因此，F_SETLK或F_SETLKW企图建立那把锁，可能会被另一个进程插入并建立一把相同的锁。因此，要处理F_SETLK返回的可能的出错<br>
+
+举个🌰，关于写入锁文件
+```c
+#include "../include/apue.h"
+#include <fcntl.h>
+#include <sys/file.h>
+
+void lock_tst(int fd,int type,off_t offset,int whence,off_t len){
+    struct flock lock;
+    lock.l_type = type;
+    lock.l_start = offset;
+    lock.l_whence = whence;
+    lock.l_len = len;
+    while(1){
+        lock.l_type = type;
+        if((fcntl(fd,F_SETLK,&lock)) == 0){
+            // 根据不同的type值给文件上锁或解锁
+            switch (lock.l_type)
+            {
+                case F_RDLCK:
+                    printf("read lock set by %d\n",getpid());
+                    break;
+                case F_WRLCK:
+                    printf("wwwwrite lock set by %d\n",getpid());
+                    break;
+                case F_UNLCK:
+                    printf("release lock set by %d\n",getpid());
+                    break;
+                default:
+                    break;
+            }
+            return;
+        }
+        // 判断文件是否能上锁
+        fcntl(fd,F_GETLK,&lock);
+        // 判断文件不能上锁的原因
+        if(lock.l_type != F_UNLCK){
+            // 该文件已有写入锁
+             switch (lock.l_type)
+            {
+                case F_RDLCK:
+                    printf("read lock set by %d\n",lock.l_pid);
+                    break;
+                case F_WRLCK:
+                    printf("write lock set by %d\n",lock.l_pid);
+                    break;
+                default:
+                    break;
+            }
+            getchar();
+        }
+    }
+    return;
+}
+
+int main(void){
+    int fd;
+    fd = open("./advance.txt",O_RDWR|O_CREAT,0666);
+    if(fd<0){
+        err_sys("open()");
+    }
+    // 给文件上写入锁
+    lock_tst(fd,F_WRLCK,0,SEEK_SET,0);
+    getchar();
+    // 给文件解锁
+    lock_tst(fd,F_UNLCK,0,SEEK_SET,0);
+    getchar();
+    close(fd);
+    exit(0);
+}
+```
+终端运行
+```c
+bogon:advanceIO transcheung$ ./lock_fcntl.t 
+wwwwrite lock set by 3528
+
+release lock set by 3528
+```
+第二个终端运行
+```c
+write lock set by 3528
+
+write lock set by 3528
+
+wwwwrite lock set by 3540
+
+release lock set by 3540
+```
+这里就指出，写入锁互斥<br>
+那么读取锁呢？
+同样运行，lock_tst改为F_RDLCK<br>
+```c
+transCheungdeMacBook-Pro:advanceIO transcheung$ ./lock_fcntl.t 
+read lock set by 3592
+
+release lock set by 3592
+```
+第二个终端运行
+```c
+read lock set by 3580
+
+release lock set by 3580
+```
+没有任何问题，证明，读锁是共享的<br>
+那么如果一个进程已经上了写锁，另一个进程上了读锁，会出现什么情况？
+```c
+int main(void){
+    int fd;
+    pid_t pid;
+    fd = open("./advance.txt",O_RDWR|O_CREAT,0666);
+    if(fd<0){
+        err_sys("open()");
+    }
+    // 给文件上写锁
+    if((pid = fork())<0)
+        err_sys("fork error");
+    else if(pid == 0){
+        // 子进程上写锁
+        lock_tst(fd,F_WRLCK,0,SEEK_SET,0);
+        sleep(10);
+        lock_tst(fd,F_UNLCK,0,SEEK_SET,0);
+        exit(0);
+    }
+    sleep(5); // 先让子进程先跑
+    // 父进程给文件上读取锁
+    lock_tst(fd,F_RDLCK,0,SEEK_SET,0);
+    getchar();
+    // 给文件解锁
+    lock_tst(fd,F_UNLCK,0,SEEK_SET,0);
+    getchar();
+    close(fd);
+    exit(0);
+}
+```
+运行结果
+```c
+wwwwrite lock set by 3931
+write already lock set by 3931
+release lock set by 3931
+
+read lock set by 3930
+
+release lock set by 3930
+```
+上了写锁，读锁是不能进行的，释放了写锁，读锁才能继续读。<br>
+反过来，上了读锁，写锁是不能进行的，要等读锁读完才能进行写锁。<br>
+#### 死锁 如果两个进程互相等待对方持有并且不释放(锁定)的资源时
+如果一个进程已经控制了文件中的一个加锁区域，然后它又试图对另一个进程控制的区域加锁，那么它就会休眠。就像上面的🌰，只要两个进程一直不释放锁，一直加锁，又想继续加锁，就会处于死锁状态。<br>
+
+### 异步IO 信号驱动IO，并不是真正意义的异步IO
+
+### readv和write 对多个碎片的读写操作，将所有小碎片写到文件中
+readv当没有连续的空间存储从fd读取或写入的数据时，将其存储在iovcnt个iov结构体中。writev的作用相同。iov是结构体数组起始位置。iovcnt是数组长度。<br>
+```c
+readv,  writev  -  read  or write data into multiple buffers
+
+#include <sys/uio.h>
+
+ssize_t readv(int fd, const struct iovec *iov, int iovcnt);
+
+ssize_t writev(int fd, const struct iovec *iov, int iovcnt);
+
+struct iovec {
+        void  *iov_base;    /* 起始地址 */
+        size_t iov_len;     /* Number of bytes to transfer */
+};
+```
+### 存储映射IO
