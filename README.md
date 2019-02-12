@@ -143,3 +143,4 @@ apue巨著，每天读一个小时，理解并深入每个知识点，对进程�
 * [基础语言题C/Cpp](./nowcoder_wrong/nowcoder_4.md)
 * [基础语言题C/Cpp](./nowcoder_wrong/nowcoder_5.md)
 * [Linux基础](./nowcoder_wrong/nowcoder_6.md)
+* [Linux基础](./nowcoder_wrong/nowcoder_7.md)
