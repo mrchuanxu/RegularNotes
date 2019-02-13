@@ -791,4 +791,189 @@ struct iovec {
         size_t iov_len;     /* Number of bytes to transfer */
 };
 ```
-### 存储映射IO
+### 存储映射IO 将一个文件的一部分或全部映射到内存中
+在*nix系统中分配内存的方法有好几种，不一定非得使用free(3)/malloc函数。<br>
+映射内存IO说得就是将一个文件的一部分或全部映射到内存中，用户拿到的就是这段内存的起始位置， **访问这个文件就相当于访问一个大字符串一样。**<br>
+**通过mmap和munmap函数可以实现一个实时的类似于malloc和free函数的效果** ，前面提及过malloc和free实际上是以打白条的形式实现的，就是在你调用函数时没有立即分配内存给你，而是在你真正使用内存的时候，再重新整合整个内存，内核找够内存分配给你。<br>
+```c
+mmap,mumap - map or unmap files or devices into memory
+#include <sys/mman.h>
+
+void *mmap(void *addr,size_t length,int prot,int flags,int fd,off_t offset);
+
+int munmap(void *addr,size_t length);
+```
+mmap函数的作用是把fd这个文件从offset偏移位置开始把length字节个长度映射到addr这个内存位置上，如果addr是NULL，则有kernel帮我们选择一块空间并使用返回值返回这段内存的首地址。<br>
+prot参数是操作权限，可以使用下表中的宏通过按位或(|)来组合指定<br>
+
+宏|含义
+|--|--|
+PROT_READ|映射区可读
+PROT_WRITE|映射区可写
+PROT_EXEC|映射区可执行
+PROT_NONE|映射区不可访问
+
+映射区不可访问(PROT_NONE)的含义是如果我映射的内存中有一块已经有某些数据了，绝对不能让我的程序越界覆盖，就可以把这段空间设置为映射区不可访问。<br>
+
+flags参数是特殊要求，二者选其一<br>
+
+宏|含义
+|--|--|
+MAP_SHARED|对映射区进行存储操作相当于对原来的文件进行写入，会改变原来文件的内容
+MAP_PRIVATE|当映射区进行存储操作时会创建一个私有副本，所有后来再对映射区的操作都相当于操作这个副本，而不影响原来的文件
+
+其它常用的选项
+* MAP_ANONYMOUS: 不依赖于任何文件，映射出来的内存空间会被清0，并且fd和offset参数会被忽略，通常我们在使用的时候会把fd设置为-1(MAC OS没有这个选项)
+
+用这个参数可以容易做出一个最简单最好用的在具有亲缘关系的进程之间的共享内存。<br>
+mmap在成功的时候返回一个指针，会指向映射的内存区域的起始地址。失败时返回MAP_FAILED宏定义，其实是这样定义的(void *)-1<br>
+
+举个🌰<br>
+```c
+#include "../include/apue.h"
+#include <sys/mman.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
+#include <fcntl.h>
+
+#define FNAME "./advance.txt"
+
+int main(void){
+    int fd,i;
+    char *str;
+    struct stat statres;
+    int count = 0;
+
+    fd = open(FNAME,O_RDONLY);
+
+    if(fd<0){
+        err_sys("open()");
+    }
+
+    // 通过stat获得文件大小
+    if(fstat(fd,&statres)<0){
+        err_sys("fstat()");
+    }
+
+    str = mmap(NULL,statres.st_size,PROT_READ,MAP_SHARED,fd,0);
+    // 映射区可读
+    if(str == MAP_FAILED)
+        err_sys("mmap()");
+
+    close(fd);
+
+    for(i = 0;i<statres.st_size;i++){
+        // 访问文本文件，所以可以把映射的内存看作是一个大字符串处理
+        if(str[i] == 's'){
+            count++;
+        }
+    }
+
+    printf("count = %d\n",count);
+
+    // 解除映射 否则会造成内存泄漏
+    munmap(str,statres.st_size);
+}
+```
+mmap的返回值时`void*`类型，百搭。在映射了不同的东西的情况下我们可以使用不同的指针来接收，这样就能用不同的方式访问这段内存空间了。上面这个文件就是文本文件，所以我们可以使用`char*`来接收它的返回值，这就是整个大字符串<br>
+
+### flock和lockf函数 可以实现好用的文件加锁
+```c
+lockf - apply, test or remove a POSIX lock on an open file
+
+#include <unistd.h>
+
+int lockf(int fd, int cmd, off_t len);
+
+flock - apply or remove an advisory lock on an open file
+
+#include <sys/file.h>
+
+int flock(int fd, int operation);
+```
+lockf可以给文件仅从局部加锁，简单来说就是从当前位置锁住len个字节。<br>
+* fd: 要加锁的文件描述符
+* cmd: 具体的命令见下表
+
+宏|说明
+|--|:--|
+F_LOCK|为文件的一段加锁，如果已经被加锁就阻塞等待，如果两个锁要锁定的部分有交集就会被合并，文件关闭时或进程退出时会自动释放，不会被子进程继承
+F_TLOCK|与F_LOCK差不多，不过是尝试加锁，非阻塞
+F_ULOCK|解锁🔓，如果是被合并的锁会分裂
+F_TEST|测试锁，如果文件被测试的部分没有锁定或者是调用进程持有锁就返回0；如果是其他进程持有锁就返回-1，并且errno设置为EAGAIN或EACCES
+
+* len:要锁定的长度，如果为0表示文件有多长锁多长，从当前位置一直锁到文件结尾
+
+```c
+#include "../include/apue.h"
+#include <sys/mman.h>
+#include <fcntl.h>
+#include <string.h>
+#include <unistd.h>
+
+#define PROCNUM 20
+#define FNAME "./advance.txt"
+#define BUFSIZE 1024
+
+static void func_add(){
+    FILE *fp;
+    int fd;
+    char buf[BUFSIZE];
+
+    fp = fopen(FNAME,"r+");
+    // 标准输出
+    if(fp == NULL){
+        err_sys("fopen()");
+    }
+
+    fd = fileno(fp);
+
+    if(fd<0)
+        err_sys("fd error");
+    
+    // 使用之前先锁定
+    lockf(fd,F_LOCK,0);
+
+    fgets(buf,BUFSIZE,fp);
+    // 把文件位置指针定位到文件首
+    rewind(fp);
+    sleep(1);
+    fprintf(fp,"%d\n",atoi(buf)+1);
+    // 输出到文件中
+    // atoi转ascii 字符串到数字
+    fflush(fp);
+
+    // 使用之后释放锁
+    lockf(fd,F_ULOCK,0);
+    return;
+}
+// 如果加不上锁就等，等别人释放锁再加，如果加上了锁就读文件的值再+1
+
+int main(void){
+    int i;
+    pid_t pid;
+
+    for(i = 0;i<PROCNUM;i++){
+        pid = fork();
+        if(pid<0){
+            err_sys("fork()");
+        }
+        if(pid == 0){
+            func_add();
+            exit(0);
+        }
+    }
+
+    for(i = 0;i<PROCNUM;i++)
+        wait(NULL);
+
+    exit(0);
+}
+```
+sleep是为了放大竞争，就是一定要出现竞争，我就是占用着资源，你也不敢动。<br>
+在调试并发的程序时，如果有些问题很难复现，那么可以 **通过加长每个并发单位的执行时间来强制它们出现竞争的情况。**这样就可以让我们更容易的分析问题。<br>
+缺点: 如果dup2，获取文件描述符，然后执行close，文件描述符的文件锁就会丢失。<br>
+![文件锁缺点](./img/lockf.png "文件锁的层面")
+#### 锁文件📃
+文件锁衍生出来的机制，把一个文件当作锁，例如要操作/tmp/out文件，那么服进程可以先创建一个/tmp/lock文件，然后再创建20个子进程同时对/tmp/out文件进行读写，但是子进程必须先锁定/tmp/lock文件才能操作/tmp/out文件，没抢到锁文件就需要等待其他进程解锁再抢🔒，等父进程收尸后，再关闭/tmp/lock文件。这个文件就是锁文件
