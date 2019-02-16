@@ -128,6 +128,7 @@ apue巨著，每天读一个小时，理解并深入每个知识点，对进程�
 * [线程控制，根据线程的属性，pthread_kill](./unixAdvance/APUE-THREAD_CONTROL.md)
 * [高级IO，非阻塞IO，epoll、select、poll通知](./unixAdvance/APUE-ADVANCEIO.md)
 * [进程间通信，管道，socket，XSI(System V)](./unixAdvance/APUE-COMUNICARTION.md)
+* [终篇-网络通信IPC，socket，协议决定通信](./unixAdvance/APUE-NETIPC_SOCKET.md)
 ### 现代操作系统
 开始学习操作系统的知识，分为进程与线程，内存管理，文件系统，输入输出，死锁。不会看书，只会不断查博客，然后做知识总结。
 * [进程与线程，很抽象](./OS/process_thread.md)
