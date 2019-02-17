@@ -329,3 +329,163 @@ struct ip_mreqn {
 ```
 IP_ADD_MEMBERSHIP:加入多播组<br>
 
+#### 丢包与校验 丢包的根本原因是拥塞
+UDP丢包，很常见，那为什么会丢包呢？这个在我讲过的[深入tcp与udp机制讲过](../tcp_ip/TCP与UDP.md) 不同的请求会选择不同的路径经过不同的路由器，这些包就会在到达路由器的时候会进入路由器的等待队列，当路由器比较繁忙的时候，队列就会满，满了就会在各个路由器根据不同的算法丢弃多余的包，一般是丢弃新来的包或随机丢弃包。所以这就是 **满则溢。**<br>
+
+ping命令TTL是一个数据包能够经过的路由器数量的上限，经过一个路由就减一，这个上限在Linux环境里默认是64，在Windows是128。还有差错报文也可以了解一下tracroute可以检测一个包到另一端要有多少跳。<br>
+
+##### 流量控制 解决丢包的方法
+令牌桶就是用来控制流的，流控分为开环式和闭环式。<br>
+在这里介绍一种停等式流控: **一种闭环式流控**。它的实现方式很简单，一问一答即可。就是发送方每次发送一个数据包之后要等待接收方的响应，确认接收方收到了自己的数据包后再发送下一个数据包。这种方式的特点就是每次等待的时间是不确定的，因为每次发包走的路径是不同的，所以包到达目的地的时间也是不同的，而且还要受网络等环境因素影响。<br>
+
+停等式缺点(停停等等)<br>
+* 浪费时间，多数之间花在了等待响应上
+* 双方发送包的数量增加，丢包率高
+* 为降低错误率，实现复杂度较高。需要加编号，怕发重
+
+停🤚等式流控虽然上升了丢包率，但是能保证对方一定能收到数据包。<br>
+##### web传输通常采用两种校验方案
+* 不做硬性校验: 交给用户刷新
+* 延迟应答: 下次通讯的时候把上次的ack带过来，表示上次的通讯是完整的
+
+拥塞会带来延迟抖动问题，每一帧延迟没问题，就怕有些帧很慢，其他帧正常，这就乱了。<br>
+
+##### 滑动窗口和拥塞窗口提高速度，做拥塞控制
+使用窗口协议的停等式流控。一下子发送协议好的多个包，应答又应答多个包。主要是改变流控的速率，这样就可以平衡丢包率和传输速率之间的杠杆。<br>
+
+#### 可靠的司机🚗，TCP
+TCP三次握手，TCP主要是客户端先发起请求，所以客户端可以称为"主动端"，而服务器被动接收请求，所以服务端也可以称为"被动端"。往往服务端要先运行起来，然后客户端再发消息，这样客户端发送的包不会因为找不到目的地址而被丢弃。<br>
+##### 半连接池 SYN+ACK链接信息
+服务端收到客户端发来的 SYN 报文后，会响应 SYN+ACK 报文给客户端，并将当前链接的一些信息放入一个叫做“半链接池”的缓冲区中，当超过一定时间后该客户端没有返回 ACK 报文，服务端再把这个半链接从半链接池中移除，释放相关资源。<br>
+
+只要出现了“XX池”，那么该池的容量终归是有限的，所以有一种下流的拒绝服务攻击手段就是利用大量的半链接把服务端的半链接池沾满，以实现拒绝服务攻击。例如当很多肉鸡向某台服务器发送第一次握手（FIN）却永远不发送第三次握手（ACK），这样很快就把服务器的半链接池沾满了，有效的用户也就无法请求服务器了，这就是下流的半链接攻击手段的大致原理。<br>
+
+防范半链接的手段就是取消半链接池，然后通过一个算法为每个链接计算出一个独一无二的标识，再把这个标识放入 cookie 中通过 ACK 返回给客户端。cookie 由内核产生，仅保留这一秒和上一秒的 cookie。当用户再次请求时需要带着这个 cookie，用相同的 cookie 计算，只要与用户带来的 cookie 相同就认为是合法用户，如果不相同就用上一秒的cookie再次计算和比较，如果还不相同，就认为用户的cookie 是伪造的或是超时的，所以用户会立即重新建立第一次握手。<br>
+
+**cookie计算公式：本机IP+本机端口+对端IP+对端端口 | Salt**<br>
+
+其实在实践当中也会保留半链接池，里面仅仅存放频繁访问的用户来优化 cookie 方式的链接。<br>
+
+#### TCP握手后，如何用TCP协议实现收发数据
+TCP步骤: 
+* S端: 取得SOCKET IPPROTO_SCTP(一种新协议，实现流式套接字)->给SOCKET取得地址bind->将SOCKET置为监听模式(listen)backlog参数，写正整数->接收连接(accept)->收/发消息(send)->关闭(close)<br>
+以上的接收连接要注意，如果成功就返回接受连接的文件描述符，失败就返回-1并设置errno。⚠️这里不能直接用存放之前的socket返回的文件描述符变量来接收accept的返回值，因为accept可能会遇到假错❌，这样之前变量里保存的文件描述符就丢了，会导致内存泄漏。<br>
+
+* C端: 取得SOCKET->给SOCKET取得地址->发起连接connect->收发消息->close
+
+协议头文件
+```c
+#ifndef PROTO_H__
+#define PROTO_H__
+// 服务器端口号
+#define SERVERPORT "8086"
+#define FMT_STAMP "%lld\r\n"
+
+#endif // !1
+```
+服务端，先运行起来，监听制定端口，操作系统指定的端口收到数据后就会送到服务端程序这里来。<br>
+```c
+#include "../include/apue.h"
+#include <arpa/inet.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+
+#include "proto.h"
+
+#define IPSTRSIZE 40
+
+static void server_job(int sd){
+    char buf[BUFSIZ];
+    int len;
+
+    len = sprintf(buf,FMT_STAMP,(long long)time(NULL));
+
+    if(send(sd,buf,len,0)<0) err_sys("send()");
+    return;
+} 
+
+int main(){
+    int sd,newsd;
+    struct sockaddr_in laddr,raddr;
+    socklen_t raddr_len;
+    char ipstr[IPSTRSIZE];
+    // 选择TCP协议
+    sd = socket(AF_INET,SOCK_STREAM,0);
+    if(sd<0) err_sys("socket()");
+    // SO_REUSEADDR用来设置端口被释放后可立即被重新使用
+    int val = 1;
+    if(setsockopt(sd,SOL_SOCKET,SO_REUSEADDR,&val,sizeof(val))<0) err_sys("setsockopt()");
+
+    laddr.sin_family = AF_INET;
+    // 指定服务端使用的端口号
+    laddr.sin_port = htons(atoi(SERVERPORT));
+    inet_pton(AF_INET,"0.0.0.0",&laddr.sin_addr.s_addr);
+
+    // 绑定端口
+    if(bind(sd,(void*)&laddr,sizeof(laddr))<0) err_sys("bind()");
+    
+    // 开始监听端口
+
+    if(listen(sd,200)<0) err_sys("listen()");
+    raddr_len = sizeof(raddr);
+
+    while(1){
+        // 阻塞等待新消息传入
+        newsd = accept(sd,(void*)&raddr,&raddr_len);
+        // 这里就是怕假错，而且文件描述符不能用开始哪个！
+        if(newsd<0){
+            if(errno == EINTR||errno == EAGAIN)
+                continue;
+            err_sys("newsd()");
+        }
+        inet_ntop(AF_INET,&raddr.sin_addr,ipstr,IPSTRSIZE);
+        printf("Client:%s:%d\n",ipstr,ntohs(raddr.sin_port));
+        server_job(newsd);
+        close(newsd);
+    }
+    close(sd);
+    exit(0);
+}
+```
+客户端，主动端，发送端口可以不用手动指定而由操作系统来随机分配一个未被占用的端口
+```c
+#include "../include/apue.h"
+#include <arpa/inet.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+
+#include "proto.h"
+
+int main(int argc,char **argv){
+    int sd;
+    FILE *fp;
+    struct sockaddr_in raddr;
+    long long stamp;
+    if(argc<2) err_sys("Usage...\n");
+
+    // TCP协议
+    sd = socket(AF_INET,SOCK_STREAM,0);
+    if(sd < 0) err_sys("socket()");
+
+    raddr.sin_family = AF_INET;
+    // 指定端口号
+    raddr.sin_port = htons(atoi(SERVERPORT));
+    // 指定ip
+    inet_pton(AF_INET,argv[1],&raddr.sin_addr);
+    // 发起请求
+    if(connect(sd,(void*)&raddr,sizeof(raddr))<0) err_sys("connect()");
+
+    fp = fdopen(sd,"r+");
+    if(fp == NULL) err_sys("fdopen()");
+
+    // 读取服务端响应
+    if(fscanf(fp,FMT_STAMP,&stamp)<1) fprintf(stderr,"fscanf() failed\n");
+    else
+    {
+        printf("stamp = %lld\n",stamp);
+    }
+    fclose(fp);
+    exit(0);
+}
+```
+一般这个时候，要是终止服务端，端口还会继续占用，被进程占用，一般等会就会这个端口又可以用了，但是一般我们要设置就是再setsockopt函数设置，optname设置为SO_REUSEADDR就可以设置如果当前端口死了，就可以重新使用这个端口。<br>
