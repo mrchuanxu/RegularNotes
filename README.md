@@ -138,6 +138,7 @@ apue巨著，每天读一个小时，理解并深入每个知识点，对进程�
 * [进程与线程，很抽象](./OS/process_thread.md)
 * [信号量，条件变量，互斥锁以及读写锁🔒，保证线程顺序执行的方法](./OS/process_signal_lock.md)
 * [进程与线程调度，因环境而已，离不开抢占](./OS/process_thread_use.md)
+* [内存管理，分页还是分段，看你的笔记本怎么写](./OS/memory_manage.md)
 
 ### 攻克linux系统编程
 * [精细控制文件IO](/)
