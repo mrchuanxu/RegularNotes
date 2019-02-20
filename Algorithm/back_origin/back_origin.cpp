@@ -7,6 +7,7 @@
  * ***/
 
 #include <iostream>
+#include <vector>
 using namespace std;
 
 // 首先，声明一个row，用来存储皇后
@@ -84,10 +85,30 @@ void func(int i,int coutweight,int items[],int n,int w){
     }
 }
 /***
- * 正则表达式
- * 同样用的是回溯
- * 根据*匹配不同的情况
+ * 全排列
+ * 全排列数字
  * ***/
+void Permutation(vector<int>& vec,int start){
+    // 判断递归终止条件，判断到vec最后的长度
+    if(start == vec.size()){
+        for(auto iter:vec){
+            cout << iter;
+        }
+        cout << endl;
+    }else{
+        for(int i = start;i<vec.size();++i){
+            swap(vec[start],vec[i]);// 用第一个跟后面的持续交换
+            Permutation(vec,start+1);
+            swap(vec[start],vec[i]); // 重新将最后一个交换到前面，作起始点
+        }
+    }
+}
+
+int main(){
+    vector<int> vec{1,2,3,4};
+    Permutation(vec,0);
+    return 0;
+}
 int main(){
     int a[] = {1,2,3,2,1,2,3,4,3,2,1,3,4,2,1,2,3,4,5,3,1,8,9,7,10,22,33};
     func(0,0,a,10,50);

@@ -28,7 +28,11 @@
 * [贪心，如何用贪心算法实现哈夫曼编码，讲究贪心策略，我一开始只要最好的，实例，剪绳子问题](./Algorithm/swordtooffer/dynamic_greedy/dynamic_greedy.cpp)
 * [分治，分而治之，分的策略以及合并的策略，求逆序度](./Algorithm/merge_nums/merge_nums.cpp)
 * [回溯，蝴蝶效应，回到原点，8皇后的争锋相对](./Algorithm/back_origin/back_origin.cpp)
+* [暴力回溯解决杨辉三角最短路径问题，动态规划解决重复问题](./Algorithm/dynamic_program/triangle_pro.cpp)
 * [动态规划，存储的是一个状态或者一个价值](./Algorithm/dynamic_program/dynamic_pro.cpp)
+##### 增加专栏，动态规划，每日一练
+* [硬币只有1，3，5，选择最少硬币](./Algorithm/dynamic_program/coin_problem.cpp)
+
 #### 剑指offer 📃✅
 ##### 基础知识
 * [大数相加，可以思考一下大数相乘计算](./Algorithm/swordtooffer/bigNumAdd/bigNumAdd.cpp)<br>
