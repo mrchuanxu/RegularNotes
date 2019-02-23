@@ -34,7 +34,7 @@
 * [硬币只有1，3，5，选择最少硬币](./Algorithm/dynamic_program/coin_problem.cpp)
 #### 高级算法篇
 * [拓扑排序，通过局部的依赖关系，推导全局有序](./Algorithm/topoSort/topoSort.cpp)
-
+* [广度优先搜索，权值加入，让优先队列以及小顶堆完成地图最短路径](./Algorithm/shorterPath/shorterPath.cpp)
 #### 剑指offer 📃✅
 ##### 基础知识
 * [大数相加，可以思考一下大数相乘计算](./Algorithm/swordtooffer/bigNumAdd/bigNumAdd.cpp)<br>
