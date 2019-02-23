@@ -32,6 +32,8 @@
 * [动态规划，存储的是一个状态或者一个价值](./Algorithm/dynamic_program/dynamic_pro.cpp)
 ##### 增加专栏，动态规划，每日一练
 * [硬币只有1，3，5，选择最少硬币](./Algorithm/dynamic_program/coin_problem.cpp)
+#### 高级算法篇
+* [拓扑排序，通过局部的依赖关系，推导全局有序](./Algorithm/topoSort/topoSort.cpp)
 
 #### 剑指offer 📃✅
 ##### 基础知识

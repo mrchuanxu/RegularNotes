@@ -6,6 +6,7 @@
         "random": "cpp",
         "iostream": "cpp",
         "map": "cpp",
-        "memory": "cpp"
+        "memory": "cpp",
+        "vector": "cpp"
     }
 }
