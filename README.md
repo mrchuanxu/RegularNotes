@@ -36,6 +36,7 @@
 * [拓扑排序，通过局部的依赖关系，推导全局有序](./Algorithm/topoSort/topoSort.cpp)
 * [广度优先搜索，权值加入，让优先队列以及小顶堆完成地图最短路径](./Algorithm/shorterPath/shorterPath.cpp)
 * [BitMap，让思维转换到二进制，0，1判断可去重，布隆过滤器实现多个哈希判断](https://mp.weixin.qq.com/s/xxauNrJY9HlVNvLrL5j2hg)
+* [B+树的存在，数据库索引查找，提高查找效率，降低内存空间](./Algorithm/bplustree/bplus_tree.cpp)
 #### 剑指offer 📃✅
 ##### 基础知识
 * [大数相加，可以思考一下大数相乘计算](./Algorithm/swordtooffer/bigNumAdd/bigNumAdd.cpp)<br>
