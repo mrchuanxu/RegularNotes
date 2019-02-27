@@ -37,6 +37,7 @@
 * [广度优先搜索，权值加入，让优先队列以及小顶堆完成地图最短路径](./Algorithm/shorterPath/shorterPath.cpp)
 * [BitMap，让思维转换到二进制，0，1判断可去重，布隆过滤器实现多个哈希判断](https://mp.weixin.qq.com/s/xxauNrJY9HlVNvLrL5j2hg)
 * [B+树的存在，数据库索引查找，提高查找效率，降低内存空间](./Algorithm/bplustree/bplus_tree.cpp)
+* [A*启发式搜索🔍，欧几里得公式与最短路径启发寻路，曼哈顿解决求平方根问题](./Algorithm/astar_dijkstra/astar_dijkstra.cpp)
 #### 剑指offer 📃✅
 ##### 基础知识
 * [大数相加，可以思考一下大数相乘计算](./Algorithm/swordtooffer/bigNumAdd/bigNumAdd.cpp)<br>
@@ -122,6 +123,8 @@
 参考tcp/ip详解与图解tcp/ip以及刘超老师的课程，尝试网络编程实现
 * [mac层与链路层以及ip网际层，网络上跑的包都是完整的，不能有上层没下层，可以有下层没上层](./tcp_ip/mac层与链路层，ip网际层.md)
 * [TCP与UDP区别详述，以及网络编程部分](./tcp_ip/TCP与UDP.md)
+* [HTTP与HTTPS，应用层的世界，从来都不简单](./tcp_ip/https_http.md)
+* [DNS->HTTPDNS，网络的负载均衡手段](./tcp_ip/DNS_address.md)
 ### unix 环境高级编程 APUE巨著 😱
 apue巨著，每天读一个小时，理解并深入每个知识点，对进程与多线程多一点了解。
 * [UNIX标准及实现](./unixAdvance/APUE-SYSIO.md)
