@@ -331,15 +331,15 @@ http1.0和http1.1都规定，若客户端发送的是非GET或者HEAD请求，�
 
 301,RFC文档说明:
 
-![301_http1.1]('./img/301_REPOST.png "301httpRFC说明")
+![301_http1.1](./img/301_REPOST.png "301httpRFC说明")
 
 302,RFC http1.0文档说明
 
-![302_http1.0]('./img/302_REPOST.png "302httpRFC说明")
+![302_http1.0](./img/302_REPOST.png "302httpRFC说明")
 
 302,RFC http1.1文档说明
 
-![302_http1.1]('./img/302_REPOST2.png.png "302http1.1RFC说明")
+![302_http1.1](./img/302_REPOST2.png.png "302http1.1RFC说明")
 
 但是⭕️实际场景，所有的浏览器都会默认把POST请求直接改为GET请求<br>
 301会将就网址替换后重定向的网址，而302则会保留就有的网页内容<br>
