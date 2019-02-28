@@ -123,7 +123,8 @@
 参考tcp/ip详解与图解tcp/ip以及刘超老师的课程，尝试网络编程实现
 * [mac层与链路层以及ip网际层，网络上跑的包都是完整的，不能有上层没下层，可以有下层没上层](./tcp_ip/mac层与链路层，ip网际层.md)
 * [TCP与UDP区别详述，以及网络编程部分](./tcp_ip/TCP与UDP.md)
-* [HTTP与HTTPS，应用层的世界，从来都不简单](./tcp_ip/https_http.md)
+* [HTTP状态码与首部字段解读，应用层的世界，从来都不简单](./tcp_ip/https_http.md)
+* [HTTP缓存机制，渣男需要被负责](./tcp_ip/cache_status.md)
 * [DNS->HTTPDNS，网络的负载均衡手段](./tcp_ip/DNS_address.md)
 ### unix 环境高级编程 APUE巨著 😱
 apue巨著，每天读一个小时，理解并深入每个知识点，对进程与多线程多一点了解。
