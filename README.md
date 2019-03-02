@@ -129,6 +129,7 @@
 * [HTTPS-为了安全🔐，我愿意带上套](./tcp_ip/HTTPS.md)
 * [Google-QUIC官宣HTTP/3.0-QUIC协议"城会玩" UDP也是我的主场](./tcp_ip/QUIC-http3.md)
 * [DNS->HTTPDNS，网络的负载均衡手段](./tcp_ip/DNS_address.md)
+* [CDN，京东建仓策略，就近配送](./tcp_ip/CDN.md)
 ### unix 环境高级编程 APUE巨著 😱
 apue巨著，每天读一个小时，理解并深入每个知识点，对进程与多线程多一点了解。
 * [UNIX标准及实现](./unixAdvance/APUE-SYSIO.md)
