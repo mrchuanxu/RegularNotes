@@ -70,6 +70,7 @@
 * [什么是智能指针？为什么要用智能指针？如何打破循环引用的问题？实现一个智能指针呗！对于资源管理有什么作用？](./cppInterviewTest/cppInterview4.md)
 * [什么是可调用对象？了解lambda表达式吗？function又是怎么回事？](./cppInterviewTest/cppInterview5.md)
 * [什么是多态，多态有什么用途。(虚函数)](./cppInterviewTest/cppInterview7.md)
+* [C++面试考点陈列](./cppInterviewTest/cppInterview12.md)
 #### Cpp Primer与TCPL部分
 对Cpp Primer的学习笔记以及部分实现。以及研读Effective C++55 items
 * [关于深拷贝与浅拷贝，知道多少？](./CppNotes/deepCopy_shallowCopy/deep_shallow.cpp)
