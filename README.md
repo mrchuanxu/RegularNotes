@@ -40,9 +40,9 @@
 * [A*启发式搜索🔍，欧几里得公式与最短路径启发寻路，曼哈顿解决求平方根问题](./Algorithm/astar_dijkstra/astar_dijkstra.cpp)
 #### 剑指offer 📃✅
 ##### 基础知识
-* [大数相加，可以思考一下大数相乘计算](./Algorithm/swordtooffer/bigNumAdd/bigNumAdd.cpp)<br>
+* [大数相加，可以思考一下大数相乘计算](./Algorithm/swordtooffer/bigNumAdd/bigNumAdd.cpp)
 * [从外到内打印矩阵，两种解法，对比，佩服剑指](./Algorithm/swordtooffer/matrixPrint/matrixPrint.cpp)
-
+* [数组中，找出其他数都出现两次的数组中只出现一次的数](./Algorithm/bit_problem/bit_problem.cc)
 #### Cpp程序设计知识点集合
 重读cpp Primer，并且将代码实现的过程
 * [拷贝构造函数。类值与类指针行为](./Cpp_Program/copy_control/copyControl.cpp)<br>
@@ -70,6 +70,7 @@
 * [什么是智能指针？为什么要用智能指针？如何打破循环引用的问题？实现一个智能指针呗！对于资源管理有什么作用？](./cppInterviewTest/cppInterview4.md)
 * [什么是可调用对象？了解lambda表达式吗？function又是怎么回事？](./cppInterviewTest/cppInterview5.md)
 * [什么是多态，多态有什么用途。(虚函数)](./cppInterviewTest/cppInterview7.md)
+* [水文-C调用C++](./cppInterviewTest/cppInterview9.md)
 * [C++面试考点陈列](./cppInterviewTest/cppInterview12.md)
 #### Cpp Primer与TCPL部分
 对Cpp Primer的学习笔记以及部分实现。以及研读Effective C++55 items
