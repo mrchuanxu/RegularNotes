@@ -44,8 +44,9 @@ int main(void){
     tesla.construct(q++,30,'o');
     tesla.construct(q++,4,'p');
     tesla.destroy(--q);
-    tesla.deallocate(p,3);
-
+    tesla.destroy(--q);
+    tesla.destroy(--q);
+    tesla.deallocate(p,3);// destory之后就是释放
     unordered_map<string,int> score1{{"andy",10},{"al",20},{"ba",30}};
 
     // cout << "haha" << endl;
