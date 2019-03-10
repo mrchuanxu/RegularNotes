@@ -30,7 +30,7 @@ struct alig1{
 ```
 根据以上的逻辑，double a会占8字节，从0x00-0x07，char b占一个字节，会占用0x08，int c占用两个字节，0x09与2求余不为0，继续找，找到了0x10，所以占了多少字节？8+1+1+2=12字节。<br>
 所以规则就是按照 **起始地址%sizeof(type) == 0**公式计算地址位置。起始明白了，底层的数据存储格式，按照多少字节读取都是一样的计算方式。<br>
-pragma就是告知cpu读取字节的模式，但是cpu
+
 #### STL的了解情况（对顺序容器、关联型容器做了一些简单的介绍）
 连续型容器:vector,array,heap,priotiry,list,slist,deque,stack,queue。<br>
 关联容器: set,map,multiset,multimap,unordered map,unordered set。<br>
@@ -299,7 +299,7 @@ void vector<T,Alloc>::insert_aux(iterator position,const T& x)
 
 对set设置相关函数，就是间接使用rb_tree的相关函数<br>
 
-map同样`map<int,string,less<int>,alloc> imap`，所有的元素都是pait，同时拥有键值与实值。<br>
+map同样`map<int,string,less<int>,alloc> imap`，所有的元素都是pair，同时拥有键值与实值。<br>
 
 ![map容器底层](./img/map_rb_tree.png)
 
