@@ -30,7 +30,7 @@
 * [回溯，蝴蝶效应，回到原点，8皇后的争锋相对](./Algorithm/back_origin/back_origin.cpp)
 * [暴力回溯解决杨辉三角最短路径问题，动态规划解决重复问题](./Algorithm/dynamic_program/triangle_pro.cpp)
 * [动态规划，存储的是一个状态或者一个价值](./Algorithm/dynamic_program/dynamic_pro.cpp)
-##### 增加专栏，动态规划，每日一练
+##### 动态规划，每日一练
 * [硬币只有1，3，5，选择最少硬币](./Algorithm/dynamic_program/coin_problem.cpp)
 #### 高级算法篇
 * [拓扑排序，通过局部的依赖关系，推导全局有序](./Algorithm/topoSort/topoSort.cpp)
@@ -38,6 +38,11 @@
 * [BitMap，让思维转换到二进制，0，1判断可去重，布隆过滤器实现多个哈希判断](https://mp.weixin.qq.com/s/xxauNrJY9HlVNvLrL5j2hg)
 * [B+树的存在，数据库索引查找，提高查找效率，降低内存空间](./Algorithm/bplustree/bplus_tree.cpp)
 * [A*启发式搜索🔍，欧几里得公式与最短路径启发寻路，曼哈顿解决求平方根问题](./Algorithm/astar_dijkstra/astar_dijkstra.cpp)
+#### 算法高级篇 并发处理算法
+思想:先正确再优化!
+
+#### leetcode刷一刷
+* [twoSum提供两种解法，分别是时间换空间与空间换时间](./leetcode/twoSum.cc)
 #### 剑指offer 📃✅
 ##### 基础知识
 * [大数相加，可以思考一下大数相乘计算](./Algorithm/swordtooffer/bigNumAdd/bigNumAdd.cpp)
