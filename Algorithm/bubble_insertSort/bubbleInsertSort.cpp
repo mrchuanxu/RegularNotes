@@ -16,6 +16,7 @@ template <typename T> class bubbleInsertSort{
         T *arr;
         void bubbleSort();
         void insertSort();
+        void selectSort();
         int arr_size;
     private:
         bubbleInsertSort(const bubbleInsertSort&);
@@ -61,12 +62,26 @@ template <class T> void bubbleInsertSort<T>::insertSort(){
     }
 }
 
+// 选择排序
+template <class T> void bubbleInsertSort<T>::selectSort(){
+    if(arr_size <=1) return;
+    for(int i = 0;i<arr_size;i++){
+        int j = i+1;
+        for(;j<arr_size;j++){// 找到最小的元素
+            if(arr[i]>arr[j]) {
+               swap(arr[i],arr[j]);
+            }
+        }
+    }
+}
+
 int main(){
     int *arr = new int[10]{2,3,4,7,6,4,2,3,3,4};
     bubbleInsertSort<int> bSort(arr);
     bSort.arr_size = 10;
     // bSort.bubbleSort();
-    bSort.insertSort();
+    //bSort.insertSort();
+    bSort.selectSort();
     int i = 0;
     while(i<10){
         cout << arr[i] << endl;

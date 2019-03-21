@@ -34,12 +34,23 @@ template <class T> void MergeQuickSort<T>::en_merge(T *arr,int mid,int left,int 
              vtmp.push_back(arr[rbegin++]);
          }
      }
+     // 这样会快一点
      while(lbegin <= mid){
          vtmp.push_back(arr[lbegin++]);
      }
      while(rbegin <= right){
          vtmp.push_back(arr[rbegin++]);
      }
+    // 这样会有几个赋值操作，所以不推荐 但是可行
+    // int istart = lbegin;
+    // int iend = mid;
+    // if(rbegin<=right){
+    //     istart = rbegin;
+    //     iend = right;
+    // }
+    // while(istart<=iend){
+    //     vtmp.push_back(arr[istart++]);
+    // }
      cout << "vtmp size after:" << vtmp.size() << endl;
      for(int i = 0; i < vtmp.size();i++){
         arr[left+i] = vtmp[i];
