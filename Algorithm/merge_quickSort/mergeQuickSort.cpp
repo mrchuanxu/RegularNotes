@@ -79,6 +79,11 @@ template <class T> void MergeQuickSort<T>::quick_sort(T *arr,int start,int end){
 template <class T> int MergeQuickSort<T>::partition(T *arr,int start,int end){
     // 分区点
     T pivot = arr[end];
+    // 分区点可以尝试三点取中法。开一个函数取也是可以的，这里先在这里尝试
+    // int middle = (start+end)/2;
+    // middle end start 取中间的值
+    // 比较取中 
+    // 后面通过不同的取值，作为更换
     int i = start;
     for(int j = start; j < end; j++){
         if(arr[j] > pivot){ // 分区的思想，可一在这里体现，其实就是改一下顺序 < 倒序 > 就能求出第k大元素。 
@@ -94,8 +99,10 @@ template <class T> void MergeQuickSort<T>::k_biggerelement(T *arr,int k,int star
     if(start>=end)
         return;
     int p = partition(arr,start,end);
-    if(p+1 == k)
+    if(p+1 == k){
         cout << arr[p] << endl;
+        return;
+    }
     else if(k>p+1)
         k_biggerelement(arr,k,p+1,end);
     else if(k<p+1)
@@ -115,6 +122,9 @@ int main(){
     for(int i = 0; i<9;i++){
         cout << arrquick[i] << endl;
     }
+    int a = 'a'-'a';
+    int b = 'b'-'a';
+    cout << b << endl;
     //mergeQuickSort.k_biggerelement(arrquick,4,0,8);
     return 0;
 }

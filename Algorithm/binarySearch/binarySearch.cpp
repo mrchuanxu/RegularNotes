@@ -35,7 +35,7 @@ template <typename T> int BinarySearch<T>::binary_search(T *arr,T val,int len){
     }
     return -1;
 }
-// 二分 不断拆分 原理 middle
+// 二分 不断拆分 原理 middle 这是一个很好的想法，sqrt没想到是这样实现的 middle的左右赋值，大了就右边，小了就左边
 double squrt(double num){
     if(num < 0 )
         return 0;
