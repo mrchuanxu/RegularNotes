@@ -54,6 +54,7 @@
 * [大数相加，可以思考一下大数相乘计算](./Algorithm/swordtooffer/bigNumAdd/bigNumAdd.cpp)
 * [从外到内打印矩阵，两种解法，对比，佩服剑指](./Algorithm/swordtooffer/matrixPrint/matrixPrint.cpp)
 * [数组中，找出其他数都出现两次的数组中只出现一次的数](./Algorithm/bit_problem/bit_problem.cc)
+* [解耦，函数指针，让代码可持续重用](./Algorithm/swordtooffer/expandMode/expandMode.cpp)
 #### Cpp程序设计知识点集合
 重读cpp Primer，并且将代码实现的过程
 * [拷贝构造函数。类值与类指针行为](./Cpp_Program/copy_control/copyControl.cpp)<br>
