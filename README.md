@@ -48,6 +48,7 @@
 * [判断回文整数，最简单的做法，求余最快](./leetcode/palindrom.cc)
 * [rommantoInt，倒过来就好了](./leetcode/romantoint.cc)
 * [longestCommonPrefix计数](./leetcode/longestPrefix.cc)
+* [mergeTwoSortList眼界真的要开阔一点，递归的做法之前一直用循环做，傻不傻](./leetcode/mergeTwoSortLists.cc)
 #### 剑指offer 📃✅
 ##### 基础知识
 * [大数相加，可以思考一下大数相乘计算](./Algorithm/swordtooffer/bigNumAdd/bigNumAdd.cpp)
