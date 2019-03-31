@@ -51,7 +51,7 @@
 * [mergeTwoSortList眼界真的要开阔一点，递归的做法之前一直用循环做，傻不傻](./leetcode/mergeTwoSortLists.cc)
 * [Subtree of Another Tree 不行就左，不行就右，递归是一个好解法](./leetcode/subtree.cc)
 * [symetric树的对称，分两个树](./leetcode/symetricTree.cc)
-* [Binary_preorder_traversal前序遍历循坏，仿栈](./leetcode/ binary-tree-preorder.cc)
+* [Binary_preorder_traversal前序遍历循坏，仿栈](./leetcode/binary-tree-preorder.cc)
 #### 剑指offer 📃✅
 ##### 基础知识
 * [大数相加，可以思考一下大数相乘计算](./Algorithm/swordtooffer/bigNumAdd/bigNumAdd.cpp)
