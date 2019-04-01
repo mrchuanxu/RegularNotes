@@ -179,6 +179,8 @@ apue巨著，每天读一个小时，理解并深入每个知识点，对进程�
 * [精细控制文件IO](/)
 * [深入程序布局内部，增强应用控制能力](./unixAdvance/linux_Deep1/elf_header.c)
 * [理解进程内存排布，掌握程序动态](./unixAdvance/linux_Deep2/processMem.c)
+* [理解线程实现，达成高效率和低复杂度](./unixAdvance/linuxDeep3/thread_create.c)
+
 
 ### 🐂牛客网刷题 错题集
 * [基础语言题C/Cpp](./nowcoder_wrong/nowcoder_1.md)
