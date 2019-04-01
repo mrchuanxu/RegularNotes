@@ -180,6 +180,7 @@ apue巨著，每天读一个小时，理解并深入每个知识点，对进程�
 * [深入程序布局内部，增强应用控制能力](./unixAdvance/linux_Deep1/elf_header.c)
 * [理解进程内存排布，掌握程序动态](./unixAdvance/linux_Deep2/processMem.c)
 * [理解线程实现，达成高效率和低复杂度](./unixAdvance/linuxDeep3/thread_create.c)
+* [探究进程间通信技术，优化数据传输效率](./unixAdvance/linuxDeep4/process_com.c)
 
 
 ### 🐂牛客网刷题 错题集
