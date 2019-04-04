@@ -54,6 +54,7 @@
 * [Subtree of Another Tree 不行就左，不行就右，递归是一个好解法](./leetcode/subtree.cc)
 * [symetric树的对称，分两个树](./leetcode/symetricTree.cc)
 * [Binary_preorder_traversal前序遍历循坏，仿栈](./leetcode/binary-tree-preorder.cc)
+* [Binary_inorder_traversal好吧，受到了前序遍历的干扰，其实就是遍历完左边，然后再看右边](./leetcode/InOrder_binary.cc)
 #### 剑指offer 📃✅
 ##### 基础知识
 * [大数相加，可以思考一下大数相乘计算](./Algorithm/swordtooffer/bigNumAdd/bigNumAdd.cpp)
@@ -181,8 +182,7 @@ apue巨著，每天读一个小时，理解并深入每个知识点，对进程�
 * [理解进程内存排布，掌握程序动态](./unixAdvance/linux_Deep2/processMem.c)
 * [理解线程实现，达成高效率和低复杂度](./unixAdvance/linuxDeep3/thread_create.c)
 * [探究进程间通信技术，优化数据传输效率](./unixAdvance/linuxDeep4/process_com.c)
-
-
+* [解析共享库工作机理，灵活组织大型项目](./unixAdvance/linuxDeep5/sharelib.c)
 ### 🐂牛客网刷题 错题集
 * [基础语言题C/Cpp](./nowcoder_wrong/nowcoder_1.md)
 * [基础语言题C/Cpp](./nowcoder_wrong/nowcoder_2.md)
