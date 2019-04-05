@@ -184,6 +184,10 @@ apue巨著，每天读一个小时，理解并深入每个知识点，对进程�
 * [解析共享库工作机理，灵活组织大型项目](./unixAdvance/linuxDeep5/sharelib.c)
 * [理解文件系统设计思想，站在巨人肩上](./unixAdvance/linuxDeep6/fileSystem.c)
 * [掌握信号处理，稳健处理信号中断和异常](./unixAdvance/linuxDeep7/signal_handle.c)
+* [理解时钟与定时器，电子世界中的脉动](./unixAdvance/linuxDeep8/timer_set.c)
+* [理解系统安全，保护你重要的资产](./unixAdvance/linuxDeep9/sys_sec.c)
+* [线程同步，让复杂的工作流协调有序](./unixAdvance/linuxDeep10/thread_com.c)
+* [活用内存映射与虚拟内存，让应用更高效](./unixAdvance/linuxDeep11/mmap.c)
 ### 🐂牛客网刷题 错题集
 * [基础语言题C/Cpp](./nowcoder_wrong/nowcoder_1.md)
 * [基础语言题C/Cpp](./nowcoder_wrong/nowcoder_2.md)
