@@ -177,12 +177,13 @@ apue巨著，每天读一个小时，理解并深入每个知识点，对进程�
 * [死锁，先发制人还是后发制人？银行家有经验](./OS/dead_lock.md)
 
 ### 攻克linux系统编程
-* [精细控制文件IO](/)
 * [深入程序布局内部，增强应用控制能力](./unixAdvance/linux_Deep1/elf_header.c)
 * [理解进程内存排布，掌握程序动态](./unixAdvance/linux_Deep2/processMem.c)
 * [理解线程实现，达成高效率和低复杂度](./unixAdvance/linuxDeep3/thread_create.c)
 * [探究进程间通信技术，优化数据传输效率](./unixAdvance/linuxDeep4/process_com.c)
 * [解析共享库工作机理，灵活组织大型项目](./unixAdvance/linuxDeep5/sharelib.c)
+* [理解文件系统设计思想，站在巨人肩上](./unixAdvance/linuxDeep6/fileSystem.c)
+* [掌握信号处理，稳健处理信号中断和异常](./unixAdvance/linuxDeep7/signal_handle.c)
 ### 🐂牛客网刷题 错题集
 * [基础语言题C/Cpp](./nowcoder_wrong/nowcoder_1.md)
 * [基础语言题C/Cpp](./nowcoder_wrong/nowcoder_2.md)
