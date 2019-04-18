@@ -8,6 +8,7 @@
         "map": "cpp",
         "memory": "cpp",
         "vector": "cpp",
-        "utility": "cpp"
+        "utility": "cpp",
+        "atomic": "cpp"
     }
 }

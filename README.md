@@ -55,6 +55,7 @@
 * [symetric树的对称，分两个树](./leetcode/symetricTree.cc)
 * [Binary_preorder_traversal前序遍历循坏，仿栈](./leetcode/binary-tree-preorder.cc)
 * [Binary_inorder_traversal好吧，受到了前序遍历的干扰，其实就是遍历完左边，然后再看右边](./leetcode/InOrder_binary.cc)
+* [ValidParenthess判断有效{}[]()，map先构造，而后再实现栈匹配](./leetcode/ValidParenthess.cc)
 #### 剑指offer 📃✅
 ##### 基础知识
 * [大数相加，可以思考一下大数相乘计算](./Algorithm/swordtooffer/bigNumAdd/bigNumAdd.cpp)
@@ -80,6 +81,8 @@
 * [我只是抄一下screen的实现](./Cpp_Program/screen/screen.h)
 * [封装数据成员private](./Cpp_Program/selectName/account.h)
 * [右值引用，参考四行代码带你理解右值引用](./Cpp_Program/rightRef/rightRef.cpp)
+* [发现好文const还有续命内存机制-(int *const&p=&a)](./CppNotes/pointer_refer.cc)
+
 #### Cpp面试题精讲㊙️
 主要收集各大面试题，并且写出了自己的理解。
 * [结构体和共同体的区别struct和union](./cppInterviewTest/cppInterview1.md)

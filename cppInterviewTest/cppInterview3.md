@@ -215,11 +215,10 @@ class Test{
     Test& operator=(const Test& test){ // 其实这里使用了深拷贝
         if(this==&test)
             return *this;
-        delete m_ptr;
-        Test *temptest;
-        temptest->m_ptr = test.m_ptr;
-        m_ptr = temptest->m_ptr; 
-        delete test.m_ptr;
+        Test tmpTest;
+        tmpTest.mptr = test.mptr;
+        test.mptr = mptr;
+        mptr = tmpTest.mptr;
         cout << "assign to other" <<endl;
         return *this;
     }
