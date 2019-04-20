@@ -55,7 +55,7 @@
 * [symetric树的对称，分两个树](./leetcode/symetricTree.cc)
 * [Binary_preorder_traversal前序遍历循坏，仿栈](./leetcode/binary-tree-preorder.cc)
 * [Binary_inorder_traversal好吧，受到了前序遍历的干扰，其实就是遍历完左边，然后再看右边](./leetcode/InOrder_binary.cc)
-* [ValidParenthess判断有效{}[]()，map先构造，而后再实现栈匹配](./leetcode/ValidParenthess.cc)
+* [ValidParenthess判断有效，map先构造，而后再实现栈匹配](./leetcode/ValidParenthess.cc)
 * [RemoveDuplicate去重，快慢指针做，做完就数据搬移](./leetcode/removeDuplicates.cc)
 #### 剑指offer 📃✅
 ##### 基础知识
