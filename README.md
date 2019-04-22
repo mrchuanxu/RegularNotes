@@ -58,6 +58,7 @@
 * [ValidParenthess判断有效，map先构造，而后再实现栈匹配](./leetcode/ValidParenthess.cc)
 * [RemoveDuplicate去重，快慢指针做，做完就数据搬移](./leetcode/removeDuplicates.cc)
 * [MergeTwoSortedArray其实就是归并的设计，只不过最后将申请的空间都浓缩到nums1中，尝试直接在最后赋值，关键就是边界条件](./leetcode/mergeTwoSortedArray.cc)
+* [Maxi_SubArray最长最大的数组子串，一个一个加，两个Sum比对](./leetcode/Maxim_SubArray.cc)
 #### 剑指offer 📃✅
 ##### 基础知识
 * [大数相加，可以思考一下大数相乘计算](./Algorithm/swordtooffer/bigNumAdd/bigNumAdd.cpp)
