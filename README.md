@@ -61,6 +61,7 @@
 * [Maxi_SubArray最长最大的数组子串，一个一个加，两个Sum比对](./leetcode/Maxim_SubArray.cc)
 * [BinaryTreeTravel两个队列实现遍历](./leetcode/BinaryTree_Travel.js)
 * [Binary_zigzag_travel两个栈实现之字形遍历](./leetcode/binary_zigzag_travel.cc)
+* [longestSubstring尝试获取i到j的最大长度，用哈希的思维计算](./leetcode/longestSubstring.js)
 #### 剑指offer 📃✅
 ##### 基础知识
 * [大数相加，可以思考一下大数相乘计算](./Algorithm/swordtooffer/bigNumAdd/bigNumAdd.cpp)
