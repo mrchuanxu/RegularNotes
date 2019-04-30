@@ -62,6 +62,7 @@
 * [BinaryTreeTravel两个队列实现遍历](./leetcode/BinaryTree_Travel.js)
 * [Binary_zigzag_travel两个栈实现之字形遍历](./leetcode/binary_zigzag_travel.cc)
 * [longestSubstring尝试获取i到j的最大长度，用哈希的思维计算](./leetcode/longestSubstring.js)
+* [sqrt(x)求平方，牛顿迭代公式，求K值斜率求得result](./leetcode/mysqrt.cc)
 #### 剑指offer 📃✅
 ##### 基础知识
 * [大数相加，可以思考一下大数相乘计算](./Algorithm/swordtooffer/bigNumAdd/bigNumAdd.cpp)
