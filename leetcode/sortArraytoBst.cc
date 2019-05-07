@@ -26,3 +26,28 @@ public:
         return p;
     }
 };
+// 还有一个js版本
+/**
+ * Definition for a binary tree node.
+ * function TreeNode(val) {
+ *     this.val = val;
+ *     this.left = this.right = null;
+ * }
+ * @param {number[]} nums
+ * @return {TreeNode}
+ *
+// var sortedArrayToBST = function(nums) {
+//     if(nums.length == 0) return null;
+//     let ptr = sortedArray(nums,0,nums.length-1);
+//     return ptr;
+// };
+
+// function sortedArray(nums,left,right){
+//     if(left > right) return null;
+//     let mid = (left+right)>>1;
+//     let ptr = new TreeNode(nums[mid]);
+//     ptr.left = arguments.callee(nums,left,mid-1);
+//     ptr.right = arguments.callee(nums,mid+1,right);
+//     return ptr;
+// }
+***/
