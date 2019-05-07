@@ -63,6 +63,7 @@
 * [Binary_zigzag_travel两个栈实现之字形遍历](./leetcode/binary_zigzag_travel.cc)
 * [longestSubstring尝试获取i到j的最大长度，用哈希的思维计算](./leetcode/longestSubstring.js)
 * [sqrt(x)求平方，牛顿迭代公式，求K值斜率求得result](./leetcode/mysqrt.cc)
+* [二分查找从一个有序数组构建一颗平衡二叉树，中序遍历的思想](./leetcode/sortArraytoBst.cc)
 #### 剑指offer 📃✅
 ##### 基础知识
 * [大数相加，可以思考一下大数相乘计算](./Algorithm/swordtooffer/bigNumAdd/bigNumAdd.cpp)
