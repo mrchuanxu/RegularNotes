@@ -65,6 +65,7 @@
 * [sqrt(x)求平方，牛顿迭代公式，求K值斜率求得result](./leetcode/mysqrt.cc)
 * [二分查找从一个有序数组构建一颗平衡二叉树，中序遍历的思想](./leetcode/sortArraytoBst.cc)
 * [插入排序的思想，超级简单searchInsertPosition](./leetcode/searchInsertPosition.cc)
+* [进行add-binary，只是排除一下情况，然后加个flag](./leetcode/add-binary.cc)
 #### 剑指offer 📃✅
 ##### 基础知识
 * [大数相加，可以思考一下大数相乘计算](./Algorithm/swordtooffer/bigNumAdd/bigNumAdd.cpp)
