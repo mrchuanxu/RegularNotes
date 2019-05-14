@@ -66,6 +66,7 @@
 * [二分查找从一个有序数组构建一颗平衡二叉树，中序遍历的思想](./leetcode/sortArraytoBst.cc)
 * [插入排序的思想，超级简单searchInsertPosition](./leetcode/searchInsertPosition.cc)
 * [进行add-binary，只是排除一下情况，然后加个flag](./leetcode/add-binary.cc)
+* [很巧妙的后序遍历以及计算两个子树的深度差大于1，这个要多看！](./leetcode/balanced_tree.cc)
 #### 剑指offer 📃✅
 ##### 基础知识
 * [大数相加，可以思考一下大数相乘计算](./Algorithm/swordtooffer/bigNumAdd/bigNumAdd.cpp)
