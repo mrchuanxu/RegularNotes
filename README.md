@@ -1,7 +1,6 @@
 # RegularNotes 🔥
 ### C➕➕
-✨✨👀日常工作以及知识点库，欢迎交流学习<br>
-求职: 深圳 广州 wx:Sebastianv-v<br>
+✨✨👀最近在研究golang了，已经转到[go_learning](https://github.com/MrTrans/go_learning)，喜欢基础文章的的小伙伴可以跟我多提issue跟我交流，有空就会更新。<br>
 #### 数据结构与算法
 记录常用数据结构，包括快速排序，冒泡排序，插入排序，图，树等数据结构以及剑指offer部分题目<br>
 ##### 线性表结构
